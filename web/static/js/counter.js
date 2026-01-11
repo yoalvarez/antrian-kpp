@@ -3,6 +3,7 @@
 let eventSource = null;
 let hasCurrentQueue = false;
 let selectedQueueType = null;
+let sseConnected = false;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -10,9 +11,14 @@ document.addEventListener('DOMContentLoaded', function() {
     loadStatsByType();
     connectSSE();
 
-    // Polling fallback - update every 3 seconds
-    setInterval(loadCounterData, 3000);
-    setInterval(loadStatsByType, 3000);
+    // Polling fallback - update every 3 seconds if SSE is disconnected
+    setInterval(() => {
+        if (!sseConnected) loadCounterData();
+    }, 3000);
+    
+    setInterval(() => {
+        if (!sseConnected) loadStatsByType();
+    }, 3000);
 });
 
 // Select queue type
@@ -129,6 +135,7 @@ function connectSSE() {
 
 // Update connection status
 function updateConnectionStatus(connected) {
+    sseConnected = connected;
     const status = document.getElementById('connection-status');
     if (connected) {
         status.textContent = 'Terhubung';

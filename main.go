@@ -8,7 +8,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
+	"path/filepath"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -31,8 +34,26 @@ var jsFS embed.FS
 var webFS embed.FS
 
 func main() {
-	configPath := flag.String("config", "configs/config.yaml", "Path to config file")
+	configPath := flag.String("config", "config.yaml", "Path to config file")
 	flag.Parse()
+
+	// Ensure config exists
+	if _, err := os.Stat(*configPath); os.IsNotExist(err) {
+		log.Printf("Config file not found at %s. Creating default config...", *configPath)
+		defaultCfg := config.DefaultConfig()
+		
+		// Create directory if needed (e.g. if path is configs/config.yaml)
+		configDir := filepath.Dir(*configPath)
+		if configDir != "." {
+			os.MkdirAll(configDir, 0755)
+		}
+
+		if err := defaultCfg.Save(*configPath); err != nil {
+			log.Printf("Warning: Failed to create default config: %v", err)
+		} else {
+			log.Println("Default config created successfully.")
+		}
+	}
 
 	// Load config
 	cfg, err := config.Load(*configPath)
@@ -79,10 +100,21 @@ func main() {
 
 	// Start server in goroutine
 	go func() {
-		log.Printf("Server started at http://%s:%d", cfg.Server.Host, cfg.Server.Port)
-		log.Printf("  Admin:   http://localhost:%d/admin", cfg.Server.Port)
-		log.Printf("  Display: http://localhost:%d/display", cfg.Server.Port)
-		log.Printf("  Health:  http://localhost:%d/health", cfg.Server.Port)
+		addr := fmt.Sprintf("http://%s:%d", cfg.Server.Host, cfg.Server.Port)
+		if cfg.Server.Host == "0.0.0.0" {
+			addr = fmt.Sprintf("http://localhost:%d", cfg.Server.Port)
+		}
+		
+		log.Printf("Server started at %s", addr)
+		log.Printf("  Admin:   %s/admin", addr)
+		log.Printf("  Display: %s/display", addr)
+
+		// Auto-open browser
+		go func() {
+			time.Sleep(1 * time.Second) // Give server a moment to start
+			log.Println("Opening browser...")
+			openBrowser(addr + "/admin")
+		}()
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server failed: %v", err)
@@ -122,6 +154,23 @@ func main() {
 	}
 
 	log.Println("Server stopped")
+}
+
+func openBrowser(url string) {
+	var err error
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	if err != nil {
+		log.Printf("Failed to open browser: %v", err)
+	}
 }
 
 func loggingMiddleware(next http.Handler) http.Handler {

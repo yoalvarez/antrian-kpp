@@ -24,7 +24,7 @@ func New(cfg *config.Config) (*DB, error) {
 		return nil, fmt.Errorf("failed to create database directory: %w", err)
 	}
 
-	db, err := sql.Open("sqlite", cfg.Database.Path+"?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)")
+	db, err := sql.Open("sqlite", cfg.Database.Path+"?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=synchronous=NORMAL")
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -186,20 +186,23 @@ func (d *DB) DeleteQueueType(id int64) error {
 // Queue operations
 
 func (d *DB) CreateQueue(queueTypeCode string) (*models.Queue, error) {
+	tx, err := d.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
 	// Get queue type to find prefix
-	queueType, err := d.GetQueueTypeByCode(queueTypeCode)
+	var prefix string
+	var qtID int64
+	err = tx.QueryRow(`SELECT id, prefix FROM queue_types WHERE code = ?`, queueTypeCode).Scan(&qtID, &prefix)
 	if err != nil {
 		// Fallback to config prefix if queue type not found
-		queueType = &models.QueueType{
-			Code:   queueTypeCode,
-			Prefix: d.config.Queue.Prefix,
-		}
+		prefix = d.config.Queue.Prefix
 	}
 
-	prefix := queueType.Prefix
-
 	var lastNumber int
-	row := d.QueryRow(`
+	row := tx.QueryRow(`
 		SELECT COALESCE(MAX(CAST(SUBSTR(queue_number, LENGTH(?) + 1) AS INTEGER)), 0)
 		FROM queues
 		WHERE queue_number LIKE ? || '%'
@@ -213,7 +216,7 @@ func (d *DB) CreateQueue(queueTypeCode string) (*models.Queue, error) {
 
 	queueNumber := fmt.Sprintf("%s%03d", prefix, lastNumber+1)
 
-	result, err := d.Exec(`
+	result, err := tx.Exec(`
 		INSERT INTO queues (queue_number, queue_type, status, created_at)
 		VALUES (?, ?, 'waiting', datetime('now', 'localtime'))
 	`, queueNumber, queueTypeCode)
@@ -222,7 +225,111 @@ func (d *DB) CreateQueue(queueTypeCode string) (*models.Queue, error) {
 	}
 
 	id, _ := result.LastInsertId()
+	
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
 	return d.GetQueue(id)
+}
+
+func (d *DB) CallNextQueue(counterID int64, queueType string) (*models.Queue, error) {
+	tx, err := d.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// 1. Get current counter state
+	var currentQueueID sql.NullInt64
+	var counterName, counterNumber string
+	err = tx.QueryRow(`SELECT current_queue_id, counter_name, counter_number FROM counters WHERE id = ?`, counterID).Scan(&currentQueueID, &counterName, &counterNumber)
+	if err != nil {
+		return nil, fmt.Errorf("counter not found: %w", err)
+	}
+
+	// 2. Complete current queue if exists
+	if currentQueueID.Valid {
+		_, err = tx.Exec(`
+			UPDATE queues 
+			SET status = 'completed', completed_at = datetime('now', 'localtime') 
+			WHERE id = ?
+		`, currentQueueID.Int64)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = tx.Exec(`
+			INSERT INTO call_history (queue_id, counter_id, action, timestamp)
+			VALUES (?, ?, ?, datetime('now', 'localtime'))
+		`, currentQueueID.Int64, counterID, models.ActionCompleted)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// 3. Find next waiting queue
+	var nextQueueID int64
+	query := `
+		SELECT id FROM queues 
+		WHERE status = 'waiting' 
+	`
+	args := []interface{}{}
+	if queueType != "" {
+		query += ` AND queue_type = ?`
+		args = append(args, queueType)
+	}
+	query += ` ORDER BY created_at ASC LIMIT 1`
+
+	err = tx.QueryRow(query, args...).Scan(&nextQueueID)
+	if err == sql.ErrNoRows {
+		// No waiting queues
+		_, err = tx.Exec(`UPDATE counters SET current_queue_id = NULL, last_call_at = NULL WHERE id = ?`, counterID)
+		if err != nil {
+			return nil, err
+		}
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return nil, sql.ErrNoRows
+	} else if err != nil {
+		return nil, err
+	}
+
+	// 4. Update next queue status
+	_, err = tx.Exec(`
+		UPDATE queues 
+		SET status = 'called', counter_id = ?, called_at = datetime('now', 'localtime')
+		WHERE id = ?
+	`, counterID, nextQueueID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 5. Update counter
+	_, err = tx.Exec(`
+		UPDATE counters 
+		SET current_queue_id = ?, last_call_at = datetime('now', 'localtime')
+		WHERE id = ?
+	`, nextQueueID, counterID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 6. Record history
+	_, err = tx.Exec(`
+		INSERT INTO call_history (queue_id, counter_id, action, timestamp)
+		VALUES (?, ?, ?, datetime('now', 'localtime'))
+	`, nextQueueID, counterID, models.ActionCalled)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return d.GetQueue(nextQueueID)
 }
 
 func (d *DB) GetQueue(id int64) (*models.Queue, error) {
@@ -462,28 +569,57 @@ func (d *DB) CreateCounter(number, name string) (*models.Counter, error) {
 }
 
 func (d *DB) GetCounter(id int64) (*models.Counter, error) {
+	query := `
+		SELECT 
+			c.id, c.counter_number, c.counter_name, c.is_active, c.current_queue_id, c.last_call_at,
+			q.id, q.queue_number, q.queue_type, q.status, q.counter_id, q.created_at, q.called_at, q.completed_at
+		FROM counters c
+		LEFT JOIN queues q ON c.current_queue_id = q.id
+		WHERE c.id = ?
+	`
+	
 	c := &models.Counter{}
-	err := d.QueryRow(`
-		SELECT id, counter_number, counter_name, is_active, current_queue_id, last_call_at
-		FROM counters WHERE id = ?
-	`, id).Scan(&c.ID, &c.CounterNumber, &c.CounterName, &c.IsActive, &c.CurrentQueueID, &c.LastCallAt)
+	var qID, qCounterID sql.NullInt64
+	var qNumber, qType, qStatus sql.NullString
+	var qCreated, qCalled, qCompleted sql.NullTime
+
+	err := d.QueryRow(query, id).Scan(
+		&c.ID, &c.CounterNumber, &c.CounterName, &c.IsActive, &c.CurrentQueueID, &c.LastCallAt,
+		&qID, &qNumber, &qType, &qStatus, &qCounterID, &qCreated, &qCalled, &qCompleted,
+	)
 	if err != nil {
 		return nil, err
 	}
+	
 	c.PrepareJSON()
-
-	if c.CurrentQueueID.Valid {
-		c.CurrentQueue, _ = d.GetQueue(c.CurrentQueueID.Int64)
+	if qID.Valid {
+		c.CurrentQueue = &models.Queue{
+			ID:          qID.Int64,
+			QueueNumber: qNumber.String,
+			QueueType:   qType.String,
+			Status:      models.QueueStatus(qStatus.String),
+			CounterID:   qCounterID,
+			CreatedAt:   qCreated.Time,
+			CalledAt:    qCalled,
+			CompletedAt: qCompleted,
+		}
+		c.CurrentQueue.PrepareJSON()
 	}
 
 	return c, nil
 }
 
 func (d *DB) ListCounters() ([]*models.Counter, error) {
-	rows, err := d.Query(`
-		SELECT id, counter_number, counter_name, is_active, current_queue_id, last_call_at
-		FROM counters ORDER BY counter_number
-	`)
+	query := `
+		SELECT 
+			c.id, c.counter_number, c.counter_name, c.is_active, c.current_queue_id, c.last_call_at,
+			q.id, q.queue_number, q.queue_type, q.status, q.counter_id, q.created_at, q.called_at, q.completed_at
+		FROM counters c
+		LEFT JOIN queues q ON c.current_queue_id = q.id
+		ORDER BY c.counter_number
+	`
+	
+	rows, err := d.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -492,12 +628,31 @@ func (d *DB) ListCounters() ([]*models.Counter, error) {
 	var counters []*models.Counter
 	for rows.Next() {
 		c := &models.Counter{}
-		if err := rows.Scan(&c.ID, &c.CounterNumber, &c.CounterName, &c.IsActive, &c.CurrentQueueID, &c.LastCallAt); err != nil {
+		var qID, qCounterID sql.NullInt64
+		var qNumber, qType, qStatus sql.NullString
+		var qCreated, qCalled, qCompleted sql.NullTime
+
+		err := rows.Scan(
+			&c.ID, &c.CounterNumber, &c.CounterName, &c.IsActive, &c.CurrentQueueID, &c.LastCallAt,
+			&qID, &qNumber, &qType, &qStatus, &qCounterID, &qCreated, &qCalled, &qCompleted,
+		)
+		if err != nil {
 			return nil, err
 		}
+		
 		c.PrepareJSON()
-		if c.CurrentQueueID.Valid {
-			c.CurrentQueue, _ = d.GetQueue(c.CurrentQueueID.Int64)
+		if qID.Valid {
+			c.CurrentQueue = &models.Queue{
+				ID:          qID.Int64,
+				QueueNumber: qNumber.String,
+				QueueType:   qType.String,
+				Status:      models.QueueStatus(qStatus.String),
+				CounterID:   qCounterID,
+				CreatedAt:   qCreated.Time,
+				CalledAt:    qCalled,
+				CompletedAt: qCompleted,
+			}
+			c.CurrentQueue.PrepareJSON()
 		}
 		counters = append(counters, c)
 	}

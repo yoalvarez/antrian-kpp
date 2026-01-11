@@ -48,8 +48,9 @@ func New(db *database.DB, hub *sse.Hub, cfg *config.Config, webFS embed.FS) (*Ha
 }
 
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-	// Static files
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(h.staticFS))))
+	// Static files with caching
+	staticHandler := http.StripPrefix("/static/", http.FileServer(http.FS(h.staticFS)))
+	mux.Handle("/static/", h.cacheMiddleware(staticHandler))
 
 	// Pages
 	mux.HandleFunc("/", h.handleIndex)
@@ -91,6 +92,14 @@ func (h *Handler) jsonError(w http.ResponseWriter, message string, code int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(map[string]string{"error": message})
+}
+
+func (h *Handler) cacheMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Cache for 1 hour
+		w.Header().Set("Cache-Control", "public, max-age=3600")
+		next.ServeHTTP(w, r)
+	})
 }
 
 // Page handlers
@@ -317,47 +326,23 @@ func (h *Handler) handleCallNext(w http.ResponseWriter, r *http.Request, counter
 	// Get queue type from query parameter
 	queueType := r.URL.Query().Get("type")
 
-	counter, err := h.db.GetCounter(counterID)
-	if err != nil {
-		h.jsonError(w, "Counter not found", http.StatusNotFound)
-		return
-	}
-
-	// Complete current queue if exists
-	if counter.CurrentQueueID.Valid {
-		h.db.UpdateQueueStatus(counter.CurrentQueueID.Int64, models.StatusCompleted, &counterID)
-		h.db.AddCallHistory(counter.CurrentQueueID.Int64, counterID, models.ActionCompleted)
-	}
-
-	// Get next waiting queue (by type if specified)
-	var queue *models.Queue
-	if queueType != "" {
-		queue, err = h.db.GetNextWaitingQueueByType(queueType)
-	} else {
-		queue, err = h.db.GetNextWaitingQueue()
-	}
+	// Atomic call next queue
+	queue, err := h.db.CallNextQueue(counterID, queueType)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.db.SetCounterCurrentQueue(counterID, nil)
 			h.jsonError(w, "No waiting queue", http.StatusNotFound)
 			return
 		}
-		h.jsonError(w, "Database error", http.StatusInternalServerError)
+		h.jsonError(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Update queue and counter
-	if err := h.db.UpdateQueueStatus(queue.ID, models.StatusCalled, &counterID); err != nil {
-		h.jsonError(w, "Failed to update queue", http.StatusInternalServerError)
+	// Get updated counter info for broadcast
+	counter, err := h.db.GetCounter(counterID)
+	if err != nil {
+		h.jsonError(w, "Failed to get counter info", http.StatusInternalServerError)
 		return
 	}
-
-	if err := h.db.SetCounterCurrentQueue(counterID, &queue.ID); err != nil {
-		h.jsonError(w, "Failed to update counter", http.StatusInternalServerError)
-		return
-	}
-
-	h.db.AddCallHistory(queue.ID, counterID, models.ActionCalled)
 
 	// Broadcast to display
 	h.hub.BroadcastDisplay("queue_called", models.QueueCalledData{
@@ -375,8 +360,6 @@ func (h *Handler) handleCallNext(w http.ResponseWriter, r *http.Request, counter
 		Timestamp:    time.Now(),
 	})
 
-	// Refresh counter data
-	counter, _ = h.db.GetCounter(counterID)
 	h.jsonResponse(w, counter)
 
 	log.Printf("Queue %s called to counter %s", queue.QueueNumber, counter.CounterName)

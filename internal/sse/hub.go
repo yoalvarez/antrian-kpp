@@ -170,7 +170,7 @@ func (h *Hub) serveSSE(w http.ResponseWriter, r *http.Request, counterID int64) 
 	clientID := fmt.Sprintf("%d-%d", time.Now().UnixNano(), counterID)
 	client := &Client{
 		ID:        clientID,
-		Channel:   make(chan []byte, 10),
+		Channel:   make(chan []byte, 100),
 		CounterID: counterID,
 	}
 
