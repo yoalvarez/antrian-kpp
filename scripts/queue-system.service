@@ -1,0 +1,17 @@
+[Unit]
+Description=Queue System
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/queue-system
+ExecStart=/opt/queue-system/queue-system -config /opt/queue-system/config.yaml
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

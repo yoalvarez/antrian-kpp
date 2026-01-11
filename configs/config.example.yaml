@@ -1,0 +1,29 @@
+server:
+  port: 8080
+  host: "0.0.0.0"
+  read_timeout: 30s
+  write_timeout: 30s
+
+database:
+  path: "./data/queue.db"
+  max_open_conns: 25
+  max_idle_conns: 5
+
+logging:
+  level: "info"
+  output: "stdout"
+  file_path: "./data/logs/app.log"
+
+queue:
+  prefix: "A"
+  start_number: 1
+  reset_daily: true
+  auto_cancel_hours: 24
+
+audio:
+  enabled: true
+  bell_file: "/static/audio/bell.mp3"
+
+security:
+  admin_password: "admin123"
+  session_timeout: 3600

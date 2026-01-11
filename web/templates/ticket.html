@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ambil Nomor Antrian</title>
+    <link rel="stylesheet" href="/static/css/ticket.css">
+</head>
+<body class="ticket-body">
+    <div class="ticket-container">
+        <header class="ticket-header">
+            <h1>Sistem Antrian</h1>
+            <div class="datetime" id="datetime"></div>
+        </header>
+
+        <main class="ticket-main">
+            <div class="welcome-section">
+                <h2>Selamat Datang</h2>
+                <p>Silakan pilih jenis layanan untuk mengambil nomor antrian</p>
+            </div>
+
+            <div class="queue-types-grid" id="queue-types">
+                {{range .QueueTypes}}
+                <button class="queue-type-btn" onclick="takeQueue('{{.Code}}')" data-code="{{.Code}}">
+                    <span class="type-prefix">{{.Prefix}}</span>
+                    <span class="type-name">{{.Name}}</span>
+                </button>
+                {{else}}
+                <button class="queue-type-btn" onclick="takeQueue('A')">
+                    <span class="type-prefix">A</span>
+                    <span class="type-name">Umum</span>
+                </button>
+                {{end}}
+            </div>
+        </main>
+
+        <footer class="ticket-footer">
+            <a href="/display">Lihat Display Antrian</a>
+        </footer>
+    </div>
+
+    <!-- Queue Ticket Modal -->
+    <div class="modal ticket-modal" id="ticket-modal">
+        <div class="modal-content ticket-content">
+            <div class="ticket">
+                <div class="ticket-header-text">Nomor Antrian Anda</div>
+                <div class="ticket-number" id="ticket-number">A001</div>
+                <div class="ticket-type" id="ticket-type">Umum</div>
+                <div class="ticket-time" id="ticket-time"></div>
+                <div class="ticket-footer-text">Mohon menunggu hingga nomor Anda dipanggil</div>
+            </div>
+            <button class="close-btn" onclick="closeTicketModal()">Tutup</button>
+        </div>
+    </div>
+
+    <script>
+        // Update date time
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            document.getElementById('datetime').textContent = now.toLocaleDateString('id-ID', options);
+        }
+
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+
+        // Take queue
+        async function takeQueue(typeCode) {
+            const btn = event.currentTarget;
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`/api/queues/take?type=${typeCode}`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to take queue');
+                }
+
+                const queue = await response.json();
+                showTicket(queue, typeCode);
+            } catch (error) {
+                console.error('Failed to take queue:', error);
+                alert('Gagal mengambil nomor antrian. Silakan coba lagi.');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // Show ticket modal
+        async function showTicket(queue, typeCode) {
+            document.getElementById('ticket-number').textContent = queue.queue_number;
+            document.getElementById('ticket-time').textContent = new Date().toLocaleString('id-ID');
+
+            // Get type name
+            try {
+                const response = await fetch('/api/queue-types?active=true');
+                const types = await response.json();
+                const type = types.find(t => t.code === typeCode);
+                if (type) {
+                    document.getElementById('ticket-type').textContent = type.name;
+                }
+            } catch (e) {
+                document.getElementById('ticket-type').textContent = typeCode;
+            }
+
+            document.getElementById('ticket-modal').classList.add('show');
+        }
+
+        // Close ticket modal
+        function closeTicketModal() {
+            document.getElementById('ticket-modal').classList.remove('show');
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeTicketModal();
+            }
+        });
+
+        // Close modal on outside click
+        document.getElementById('ticket-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeTicketModal();
+            }
+        });
+    </script>
+</body>
+</html>
