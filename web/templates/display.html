@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display Antrian</title>
+    <link rel="stylesheet" href="/static/css/display.css">
+</head>
+<body class="display-body">
+    <div class="display-container">
+        <header class="display-header">
+            <h1>Sistem Antrian</h1>
+            <div class="datetime" id="datetime"></div>
+        </header>
+
+        <main class="display-main">
+            <div class="current-call" id="current-call">
+                <div class="call-label">Nomor Antrian</div>
+                <div class="call-number" id="call-number">---</div>
+                <div class="call-counter" id="call-counter">Menunggu panggilan</div>
+            </div>
+
+            <aside class="sidebar">
+                <div class="queue-info">
+                    <div class="info-card">
+                        <span class="info-value" id="waiting-count">0</span>
+                        <span class="info-label">Antrian Menunggu</span>
+                    </div>
+                </div>
+
+                <div class="recent-calls">
+                    <h3>Riwayat Panggilan</h3>
+                    <div class="recent-list" id="recent-list">
+                        <div class="recent-item" style="opacity: 0.5;">
+                            <span class="number">---</span>
+                            <span class="counter">Belum ada</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <footer class="display-footer">
+            <a href="/ticket" class="take-queue-link">Ambil Nomor Antrian</a>
+        </footer>
+    </div>
+
+    {{if .AudioEnabled}}
+    <audio id="bell-audio" preload="auto">
+        <source src="{{.BellFile}}" type="audio/mpeg">
+    </audio>
+    {{end}}
+
+    <script>
+        const AUDIO_ENABLED = {{.AudioEnabled}};
+    </script>
+    <script src="/static/js/display.js"></script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Counter.CounterName}} - Sistem Antrian</title>
+    <link rel="stylesheet" href="/static/css/counter.css">
+</head>
+<body class="counter-body">
+    <div class="counter-container">
+        <header class="counter-header">
+            <h1>{{.Counter.CounterName}}</h1>
+            <div class="counter-number">Loket {{.Counter.CounterNumber}}</div>
+        </header>
+
+        <main class="counter-main">
+            <div class="current-queue-section">
+                <div class="section-label">Antrian Saat Ini</div>
+                <div class="current-queue" id="current-queue">
+                    {{if .Counter.CurrentQueue}}
+                    {{.Counter.CurrentQueue.QueueNumber}}
+                    {{else}}
+                    ---
+                    {{end}}
+                </div>
+                <div class="queue-status" id="queue-status">
+                    {{if .Counter.CurrentQueue}}
+                    Sedang Dilayani
+                    {{else}}
+                    Tidak Ada Antrian
+                    {{end}}
+                </div>
+            </div>
+
+            <div class="queue-type-selector">
+                <div class="selector-label">Pilih Jenis Antrian</div>
+                <div class="queue-type-buttons" id="queue-type-buttons">
+                    {{range .QueueTypes}}
+                    <button class="queue-type-btn" data-type="{{.Code}}" onclick="selectQueueType('{{.Code}}')">
+                        <span class="type-prefix">{{.Prefix}}</span>
+                        <span class="type-name">{{.Name}}</span>
+                        <span class="type-count" id="count-{{.Code}}">0</span>
+                    </button>
+                    {{else}}
+                    <button class="queue-type-btn selected" data-type="A" onclick="selectQueueType('A')">
+                        <span class="type-prefix">A</span>
+                        <span class="type-name">Umum</span>
+                        <span class="type-count" id="count-A">0</span>
+                    </button>
+                    {{end}}
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="action-btn btn-next" id="btn-next" onclick="callNext()" disabled>
+                    <span class="btn-icon">&#9658;</span>
+                    <span class="btn-text">PANGGIL BERIKUTNYA</span>
+                </button>
+
+                <button class="action-btn btn-recall" id="btn-recall" onclick="recall()" disabled>
+                    <span class="btn-icon">&#128266;</span>
+                    <span class="btn-text">PANGGIL ULANG</span>
+                </button>
+
+                <button class="action-btn btn-complete" id="btn-complete" onclick="complete()" disabled>
+                    <span class="btn-icon">&#10004;</span>
+                    <span class="btn-text">SELESAI</span>
+                </button>
+
+                <button class="action-btn btn-cancel" id="btn-cancel" onclick="cancel()" disabled>
+                    <span class="btn-icon">&#10006;</span>
+                    <span class="btn-text">LEWATI</span>
+                </button>
+            </div>
+        </main>
+
+        <footer class="counter-footer">
+            <a href="/admin">Admin Panel</a>
+            <span class="connection-status" id="connection-status">Connecting...</span>
+        </footer>
+    </div>
+
+    <script>
+        const COUNTER_ID = {{.Counter.ID}};
+        const COUNTER_NAME = "{{.Counter.CounterName}}";
+    </script>
+    <script src="/static/js/counter.js"></script>
+</body>
+</html>

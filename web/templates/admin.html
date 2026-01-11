@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Sistem Antrian</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <h1>Panel Admin Sistem Antrian</h1>
+            <nav>
+                <a href="/ticket" target="_blank">Ambil Antrian</a>
+                <a href="/display" target="_blank">Display</a>
+            </nav>
+        </header>
+
+        <main class="admin-main">
+            <section class="stats-section">
+                <h2>Statistik Hari Ini</h2>
+                <div class="stats-grid" id="stats">
+                    <div class="stat-card">
+                        <span class="stat-value" id="stat-total">0</span>
+                        <span class="stat-label">Total Antrian</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="stat-waiting">0</span>
+                        <span class="stat-label">Menunggu</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="stat-called">0</span>
+                        <span class="stat-label">Dipanggil</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="stat-completed">0</span>
+                        <span class="stat-label">Selesai</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="stat-counters">0</span>
+                        <span class="stat-label">Loket Aktif</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="queue-types-section">
+                <div class="section-header">
+                    <h2>Jenis Antrian</h2>
+                    <button class="btn btn-primary" onclick="showAddQueueTypeModal()">+ Tambah Jenis</button>
+                </div>
+                <div class="queue-types-grid" id="queue-types-list">
+                    <!-- Queue types will be loaded here -->
+                </div>
+            </section>
+
+            <section class="counters-section">
+                <div class="section-header">
+                    <h2>Manajemen Loket</h2>
+                    <button class="btn btn-primary" onclick="showAddCounterModal()">+ Tambah Loket</button>
+                </div>
+                <div class="counters-grid" id="counters-list">
+                    <!-- Counters will be loaded here -->
+                </div>
+            </section>
+
+            <section class="queues-section">
+                <div class="section-header">
+                    <h2>Daftar Antrian</h2>
+                </div>
+                <div class="queue-filters-row">
+                    <div class="filter-group">
+                        <label>Status:</label>
+                        <div class="status-filters">
+                            <button class="btn btn-sm active" data-filter="">Semua</button>
+                            <button class="btn btn-sm" data-filter="waiting">Menunggu</button>
+                            <button class="btn btn-sm" data-filter="called">Dipanggil</button>
+                            <button class="btn btn-sm" data-filter="completed">Selesai</button>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-date">Tanggal:</label>
+                        <input type="date" id="filter-date" class="filter-input" onchange="applyFilters()">
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-type">Jenis:</label>
+                        <select id="filter-type" class="filter-input" onchange="applyFilters()">
+                            <option value="">Semua Jenis</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="queues-table-container">
+                    <table class="queues-table">
+                        <thead>
+                            <tr>
+                                <th>No. Antrian</th>
+                                <th>Jenis</th>
+                                <th>Status</th>
+                                <th>Loket</th>
+                                <th>Waktu Ambil</th>
+                                <th>Waktu Panggil</th>
+                            </tr>
+                        </thead>
+                        <tbody id="queues-list">
+                            <!-- Queues will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="pagination">
+                    <!-- Pagination will be loaded here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Add Counter Modal -->
+    <div class="modal" id="add-counter-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Tambah Loket Baru</h3>
+                <button class="modal-close" onclick="closeModal('add-counter-modal')">&times;</button>
+            </div>
+            <form id="add-counter-form" onsubmit="addCounter(event)">
+                <div class="form-group">
+                    <label for="counter-number">Nomor Loket</label>
+                    <input type="text" id="counter-number" required placeholder="1">
+                </div>
+                <div class="form-group">
+                    <label for="counter-name">Nama Loket</label>
+                    <input type="text" id="counter-name" required placeholder="Loket 1">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn" onclick="closeModal('add-counter-modal')">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Queue Type Modal -->
+    <div class="modal" id="add-queue-type-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Tambah Jenis Antrian</h3>
+                <button class="modal-close" onclick="closeModal('add-queue-type-modal')">&times;</button>
+            </div>
+            <form id="add-queue-type-form" onsubmit="addQueueType(event)">
+                <div class="form-group">
+                    <label for="queue-type-code">Kode</label>
+                    <input type="text" id="queue-type-code" required placeholder="A" maxlength="5">
+                    <small>Kode unik untuk jenis antrian (contoh: A, B, CS)</small>
+                </div>
+                <div class="form-group">
+                    <label for="queue-type-name">Nama Layanan</label>
+                    <input type="text" id="queue-type-name" required placeholder="Layanan Umum">
+                </div>
+                <div class="form-group">
+                    <label for="queue-type-prefix">Prefix Nomor</label>
+                    <input type="text" id="queue-type-prefix" required placeholder="A" maxlength="5">
+                    <small>Awalan nomor antrian (contoh: A untuk A001, A002)</small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn" onclick="closeModal('add-queue-type-modal')">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Queue Type Modal -->
+    <div class="modal" id="edit-queue-type-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Jenis Antrian</h3>
+                <button class="modal-close" onclick="closeModal('edit-queue-type-modal')">&times;</button>
+            </div>
+            <form id="edit-queue-type-form" onsubmit="updateQueueType(event)">
+                <input type="hidden" id="edit-queue-type-id">
+                <div class="form-group">
+                    <label for="edit-queue-type-name">Nama Layanan</label>
+                    <input type="text" id="edit-queue-type-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-queue-type-prefix">Prefix Nomor</label>
+                    <input type="text" id="edit-queue-type-prefix" required maxlength="5">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="edit-queue-type-active"> Aktif
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-danger" onclick="deleteQueueType()">Hapus</button>
+                    <button type="button" class="btn" onclick="closeModal('edit-queue-type-modal')">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>
