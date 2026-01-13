@@ -505,3 +505,37 @@ body {
     gap: 0.5rem;
     margin-top: 1.5rem;
 }
+
+/* Modal body styles */
+.modal-body {
+    text-align: center;
+    padding: 1rem 0;
+}
+
+.modal-body ul {
+    text-align: left;
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+}
+
+.modal-body ul li {
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-color);
+}
+
+.modal-body p {
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.warning-icon {
+    font-size: 3rem;
+    color: var(--danger-color);
+    margin-bottom: 0.5rem;
+}
+
+.warning-text {
+    color: var(--danger-color);
+    font-weight: 500;
+}

@@ -435,3 +435,58 @@ document.querySelectorAll('.modal').forEach(modal => {
         }
     });
 });
+
+// Show reset confirmation modal
+async function showResetModal() {
+    // Load pilihan jenis antrian ke dropdown
+    try {
+        const response = await fetch('/api/queue-types');
+        const types = await response.json();
+
+        const select = document.getElementById('reset-queue-type');
+        select.innerHTML = '<option value="">Semua Jenis Antrian</option>';
+        types.forEach(type => {
+            if (type.is_active) {
+                select.innerHTML += `<option value="${type.code}">${type.prefix} - ${type.name}</option>`;
+            }
+        });
+    } catch (error) {
+        console.error('Failed to load queue types for reset:', error);
+    }
+
+    document.getElementById('reset-modal').classList.add('show');
+}
+
+// Reset queues hari ini
+async function resetQueues() {
+    const queueType = document.getElementById('reset-queue-type').value;
+
+    try {
+        let url = '/api/admin/reset-queues';
+        if (queueType) {
+            url += `?type=${encodeURIComponent(queueType)}`;
+        }
+
+        const response = await fetch(url, {
+            method: 'POST'
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to reset queues');
+        }
+
+        closeModal('reset-modal');
+
+        // Reload all data
+        loadStats();
+        loadCounters();
+        loadQueues();
+
+        alert(result.message);
+    } catch (error) {
+        console.error('Failed to reset queues:', error);
+        alert('Gagal mereset data antrian: ' + error.message);
+    }
+}

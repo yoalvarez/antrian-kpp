@@ -758,6 +758,77 @@ func (d *DB) CancelOldQueues(hours int) (int64, error) {
 	return result.RowsAffected()
 }
 
+// ResetQueuesToday menghapus data antrian hari ini berdasarkan jenis antrian
+// queueType: kode jenis antrian (kosong = semua jenis)
+func (d *DB) ResetQueuesToday(queueType string) (int64, error) {
+	tx, err := d.Begin()
+	if err != nil {
+		return 0, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Build WHERE clause untuk filter
+	whereQueue := "DATE(created_at) = DATE('now', 'localtime')"
+	args := []interface{}{}
+	if queueType != "" {
+		whereQueue += " AND queue_type = ?"
+		args = append(args, queueType)
+	}
+
+	// Ambil ID antrian yang akan dihapus
+	query := fmt.Sprintf("SELECT id FROM queues WHERE %s", whereQueue)
+	rows, err := tx.Query(query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get queue ids: %w", err)
+	}
+
+	var queueIDs []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return 0, fmt.Errorf("failed to scan queue id: %w", err)
+		}
+		queueIDs = append(queueIDs, id)
+	}
+	rows.Close()
+
+	if len(queueIDs) == 0 {
+		return 0, nil // Tidak ada antrian untuk dihapus
+	}
+
+	// Reset counter yang current_queue_id-nya ada di list yang akan dihapus
+	for _, qid := range queueIDs {
+		_, err = tx.Exec(`UPDATE counters SET current_queue_id = NULL, last_call_at = NULL WHERE current_queue_id = ?`, qid)
+		if err != nil {
+			return 0, fmt.Errorf("failed to reset counter: %w", err)
+		}
+	}
+
+	// Hapus call_history untuk antrian yang akan dihapus
+	for _, qid := range queueIDs {
+		_, err = tx.Exec(`DELETE FROM call_history WHERE queue_id = ?`, qid)
+		if err != nil {
+			return 0, fmt.Errorf("failed to delete call_history: %w", err)
+		}
+	}
+
+	// Hapus antrian hari ini sesuai filter
+	deleteQuery := fmt.Sprintf("DELETE FROM queues WHERE %s", whereQueue)
+	result, err := tx.Exec(deleteQuery, args...)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete queues: %w", err)
+	}
+
+	affected, _ := result.RowsAffected()
+
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return affected, nil
+}
+
 func (d *DB) Close() error {
 	return d.DB.Close()
 }

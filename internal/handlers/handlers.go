@@ -76,6 +76,9 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/stats", h.handleStats)
 	mux.HandleFunc("/api/stats/by-type", h.handleStatsByType)
 
+	// API - Admin
+	mux.HandleFunc("/api/admin/reset-queues", h.handleResetQueues)
+
 	// SSE
 	mux.HandleFunc("/api/sse/display", h.handleDisplaySSE)
 	mux.HandleFunc("/api/sse/counter/", h.handleCounterSSE)
@@ -497,6 +500,43 @@ func (h *Handler) handleStatsByType(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.jsonResponse(w, counts)
+}
+
+// Admin handler - Reset queues hari ini
+func (h *Handler) handleResetQueues(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.jsonError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Ambil parameter queue_type dari query string (kosong = semua jenis)
+	queueType := r.URL.Query().Get("type")
+
+	affected, err := h.db.ResetQueuesToday(queueType)
+	if err != nil {
+		log.Printf("Failed to reset queues: %v", err)
+		h.jsonError(w, "Failed to reset queues: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Broadcast update ke semua client
+	waitingCount, _ := h.db.GetWaitingCount()
+	h.hub.BroadcastAllCounters("queue_reset", models.CounterUpdateData{
+		WaitingCount: waitingCount,
+		Timestamp:    time.Now(),
+	})
+
+	message := fmt.Sprintf("%d antrian hari ini berhasil direset", affected)
+	if queueType != "" {
+		message = fmt.Sprintf("%d antrian tipe %s hari ini berhasil direset", affected, queueType)
+	}
+
+	log.Printf("Reset queues today: type=%s, affected=%d", queueType, affected)
+	h.jsonResponse(w, map[string]interface{}{
+		"status":   "success",
+		"message":  message,
+		"affected": affected,
+	})
 }
 
 // Queue Types API handlers

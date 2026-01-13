@@ -66,14 +66,23 @@ async function pollForUpdates() {
 // Check audio permission
 function checkAudioPermission() {
   // Show audio enable button
-  const footer = document.querySelector(".display-footer");
-  if (footer && !audioEnabled) {
+  const container = document.querySelector(".display-header");
+  if (container && !audioEnabled) {
     const audioBtn = document.createElement("button");
     audioBtn.id = "enable-audio-btn";
     audioBtn.className = "enable-audio-btn";
     audioBtn.innerHTML = "🔇 Klik untuk Aktifkan Suara";
+    audioBtn.style.marginLeft = "auto"; 
+    audioBtn.style.marginRight = "1rem";
     audioBtn.onclick = enableAudio;
-    footer.insertBefore(audioBtn, footer.firstChild);
+    
+    // Insert before the datetime div or append if simpler
+    const datetime = container.querySelector(".datetime");
+    if (datetime) {
+        container.insertBefore(audioBtn, datetime);
+    } else {
+        container.appendChild(audioBtn);
+    }
   }
 }
 

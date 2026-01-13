@@ -13,6 +13,7 @@
             <nav>
                 <a href="/ticket" target="_blank">Ambil Antrian</a>
                 <a href="/display" target="_blank">Display</a>
+                <button class="btn btn-danger" onclick="showResetModal()">Reset Antrian</button>
             </nav>
         </header>
 
@@ -194,6 +195,40 @@
                     <button type="submit" class="btn btn-primary">Simpan</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Reset Queues Confirmation Modal -->
+    <div class="modal" id="reset-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Reset Antrian Hari Ini</h3>
+                <button class="modal-close" onclick="closeModal('reset-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="warning-icon">&#9888;</div>
+                <p class="warning-text"><strong>Peringatan!</strong></p>
+                <p>Anda akan menghapus data antrian <strong>HARI INI</strong>:</p>
+
+                <div class="form-group" style="text-align: left; margin-top: 1rem;">
+                    <label for="reset-queue-type">Pilih Jenis Antrian:</label>
+                    <select id="reset-queue-type" class="filter-input" style="width: 100%;">
+                        <option value="">Semua Jenis Antrian</option>
+                        <!-- Options akan diisi oleh JavaScript -->
+                    </select>
+                </div>
+
+                <ul>
+                    <li>Nomor antrian yang sudah diambil hari ini</li>
+                    <li>Riwayat panggilan antrian hari ini</li>
+                    <li>Status antrian di loket yang terkait</li>
+                </ul>
+                <p class="warning-text">Tindakan ini tidak dapat dibatalkan!</p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn" onclick="closeModal('reset-modal')">Batal</button>
+                <button type="button" class="btn btn-danger" onclick="resetQueues()">Ya, Reset</button>
+            </div>
         </div>
     </div>
 
