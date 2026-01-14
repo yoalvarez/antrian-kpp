@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadQueueTypesFilter();
     loadCounters();
     loadQueues();
+    loadSettings();
 
     // Setup status filter buttons
     document.querySelectorAll('.status-filters .btn').forEach(btn => {
@@ -123,11 +124,12 @@ async function loadCounters() {
                     <p>Loket ${counter.counter_number}</p>
                     ${counter.current_queue ? `<p style="color: #2563eb;">Antrian: ${counter.current_queue.queue_number}</p>` : ''}
                 </div>
-                <div>
+                <div class="counter-actions">
                     <span class="counter-status ${counter.is_active ? 'active' : 'inactive'}">
                         ${counter.is_active ? 'Aktif' : 'Tidak Aktif'}
                     </span>
                     <a href="/counter/${counter.id}" class="btn btn-sm" style="margin-left: 0.5rem;">Buka</a>
+                    <button class="btn btn-sm btn-danger" onclick="deleteCounter(${counter.id}, '${counter.counter_name}')" style="margin-left: 0.5rem;">Hapus</button>
                 </div>
             </div>
         `).join('');
@@ -418,6 +420,30 @@ async function addCounter(event) {
     }
 }
 
+// Delete counter
+async function deleteCounter(id, name) {
+    if (!confirm(`Yakin ingin menghapus loket "${name}"?\n\nPerhatian: Riwayat panggilan di loket ini juga akan dihapus.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/counter/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete counter');
+        }
+
+        loadCounters();
+        loadStats();
+        alert('Loket berhasil dihapus.');
+    } catch (error) {
+        console.error('Failed to delete counter:', error);
+        alert('Gagal menghapus loket.');
+    }
+}
+
 // Close modal on escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
@@ -457,36 +483,241 @@ async function showResetModal() {
     document.getElementById('reset-modal').classList.add('show');
 }
 
-// Reset queues hari ini
+// Load display settings
+async function loadSettings() {
+    try {
+        const response = await fetch('/api/settings');
+        const settings = await response.json();
+
+        if (settings.display_video_url) {
+            document.getElementById('setting-video-url').value = settings.display_video_url;
+        }
+        if (settings.display_running_text) {
+            document.getElementById('setting-running-text').value = settings.display_running_text;
+        }
+    } catch (error) {
+        console.error('Failed to load settings:', error);
+    }
+}
+
+// Save display settings
+async function saveSettings(event) {
+    event.preventDefault();
+
+    const videoUrl = document.getElementById('setting-video-url').value;
+    const runningText = document.getElementById('setting-running-text').value;
+
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                display_video_url: videoUrl,
+                display_running_text: runningText
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save settings');
+        }
+
+        alert('Pengaturan berhasil disimpan!');
+    } catch (error) {
+        console.error('Failed to save settings:', error);
+        alert('Gagal menyimpan pengaturan.');
+    }
+}
+
+// Reset queues
 async function resetQueues() {
     const queueType = document.getElementById('reset-queue-type').value;
 
     try {
         let url = '/api/admin/reset-queues';
         if (queueType) {
-            url += `?type=${encodeURIComponent(queueType)}`;
+            url += `?type=${queueType}`;
         }
 
         const response = await fetch(url, {
             method: 'POST'
         });
 
-        const result = await response.json();
-
         if (!response.ok) {
-            throw new Error(result.error || 'Failed to reset queues');
+            throw new Error('Failed to reset queues');
         }
 
-        closeModal('reset-modal');
-
-        // Reload all data
-        loadStats();
-        loadCounters();
-        loadQueues();
-
+        const result = await response.json();
         alert(result.message);
+
+        closeModal('reset-modal');
+        loadStats();
+        loadQueues();
     } catch (error) {
         console.error('Failed to reset queues:', error);
-        alert('Gagal mereset data antrian: ' + error.message);
+        alert('Gagal mereset antrian.');
+    }
+}
+
+// ===================================
+// Ticket Design Functions
+// ===================================
+
+// Initialize ticket design on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadTicketDesign();
+    setupTicketPreview();
+});
+
+// Setup live preview for ticket design
+function setupTicketPreview() {
+    // Text inputs
+    const textInputs = [
+        'ticket-header',
+        'ticket-subheader',
+        'ticket-title',
+        'ticket-footer1',
+        'ticket-footer2',
+        'ticket-thanks'
+    ];
+
+    textInputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.addEventListener('input', updateTicketPreview);
+        }
+    });
+
+    // Checkboxes
+    const checkboxes = [
+        'ticket-show-subheader',
+        'ticket-show-type',
+        'ticket-show-datetime',
+        'ticket-show-footer',
+        'ticket-show-thanks'
+    ];
+
+    checkboxes.forEach(id => {
+        const checkbox = document.getElementById(id);
+        if (checkbox) {
+            checkbox.addEventListener('change', updateTicketPreview);
+        }
+    });
+}
+
+// Update ticket preview
+function updateTicketPreview() {
+    // Update text content
+    const header = document.getElementById('ticket-header').value || 'SISTEM ANTRIAN';
+    const subheader = document.getElementById('ticket-subheader').value || 'KPP PRATAMA';
+    const title = document.getElementById('ticket-title').value || 'NOMOR ANTRIAN ANDA';
+    const footer1 = document.getElementById('ticket-footer1').value || 'Mohon menunggu hingga';
+    const footer2 = document.getElementById('ticket-footer2').value || 'nomor Anda dipanggil';
+    const thanks = document.getElementById('ticket-thanks').value || 'Terima kasih';
+
+    document.getElementById('preview-header').textContent = header;
+    document.getElementById('preview-subheader').textContent = subheader;
+    document.getElementById('preview-title').textContent = title;
+    document.getElementById('preview-footer1').textContent = footer1;
+    document.getElementById('preview-footer2').textContent = footer2;
+    document.getElementById('preview-thanks').textContent = thanks;
+
+    // Update visibility
+    const showSubheader = document.getElementById('ticket-show-subheader').checked;
+    const showType = document.getElementById('ticket-show-type').checked;
+    const showDatetime = document.getElementById('ticket-show-datetime').checked;
+    const showFooter = document.getElementById('ticket-show-footer').checked;
+    const showThanks = document.getElementById('ticket-show-thanks').checked;
+
+    document.getElementById('preview-subheader').classList.toggle('hidden', !showSubheader);
+    document.getElementById('preview-type-label').classList.toggle('hidden', !showType);
+    document.getElementById('preview-datetime').classList.toggle('hidden', !showDatetime);
+    document.getElementById('preview-footer').classList.toggle('hidden', !showFooter);
+    document.getElementById('preview-thanks').classList.toggle('hidden', !showThanks);
+}
+
+// Load ticket design settings
+async function loadTicketDesign() {
+    try {
+        const response = await fetch('/api/settings?keys=ticket_header,ticket_subheader,ticket_title,ticket_footer1,ticket_footer2,ticket_thanks,ticket_show_subheader,ticket_show_type,ticket_show_datetime,ticket_show_footer,ticket_show_thanks');
+        const settings = await response.json();
+
+        // Set text values
+        if (settings.ticket_header) document.getElementById('ticket-header').value = settings.ticket_header;
+        if (settings.ticket_subheader) document.getElementById('ticket-subheader').value = settings.ticket_subheader;
+        if (settings.ticket_title) document.getElementById('ticket-title').value = settings.ticket_title;
+        if (settings.ticket_footer1) document.getElementById('ticket-footer1').value = settings.ticket_footer1;
+        if (settings.ticket_footer2) document.getElementById('ticket-footer2').value = settings.ticket_footer2;
+        if (settings.ticket_thanks) document.getElementById('ticket-thanks').value = settings.ticket_thanks;
+
+        // Set checkbox values (default to true if not set)
+        document.getElementById('ticket-show-subheader').checked = settings.ticket_show_subheader !== 'false';
+        document.getElementById('ticket-show-type').checked = settings.ticket_show_type !== 'false';
+        document.getElementById('ticket-show-datetime').checked = settings.ticket_show_datetime !== 'false';
+        document.getElementById('ticket-show-footer').checked = settings.ticket_show_footer !== 'false';
+        document.getElementById('ticket-show-thanks').checked = settings.ticket_show_thanks !== 'false';
+
+        // Update preview
+        updateTicketPreview();
+    } catch (error) {
+        console.error('Failed to load ticket design:', error);
+    }
+}
+
+// Save ticket design
+async function saveTicketDesign(event) {
+    event.preventDefault();
+
+    const settings = {
+        ticket_header: document.getElementById('ticket-header').value,
+        ticket_subheader: document.getElementById('ticket-subheader').value,
+        ticket_title: document.getElementById('ticket-title').value,
+        ticket_footer1: document.getElementById('ticket-footer1').value,
+        ticket_footer2: document.getElementById('ticket-footer2').value,
+        ticket_thanks: document.getElementById('ticket-thanks').value,
+        ticket_show_subheader: document.getElementById('ticket-show-subheader').checked.toString(),
+        ticket_show_type: document.getElementById('ticket-show-type').checked.toString(),
+        ticket_show_datetime: document.getElementById('ticket-show-datetime').checked.toString(),
+        ticket_show_footer: document.getElementById('ticket-show-footer').checked.toString(),
+        ticket_show_thanks: document.getElementById('ticket-show-thanks').checked.toString()
+    };
+
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(settings)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save ticket design');
+        }
+
+        alert('Desain tiket berhasil disimpan!');
+    } catch (error) {
+        console.error('Failed to save ticket design:', error);
+        alert('Gagal menyimpan desain tiket.');
+    }
+}
+
+// Test print ticket
+async function testPrintTicket() {
+    try {
+        const response = await fetch('/api/printer/test', {
+            method: 'POST'
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Print failed');
+        }
+
+        alert('Test print berhasil dikirim ke printer!');
+    } catch (error) {
+        console.error('Failed to test print:', error);
+        alert('Gagal test print: ' + error.message);
     }
 }

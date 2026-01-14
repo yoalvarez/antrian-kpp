@@ -14,6 +14,12 @@ type Config struct {
 	Queue    QueueConfig    `yaml:"queue"`
 	Audio    AudioConfig    `yaml:"audio"`
 	Security SecurityConfig `yaml:"security"`
+	Printer  PrinterConfig  `yaml:"printer"`
+}
+
+type PrinterConfig struct {
+	Enabled     bool   `yaml:"enabled"`
+	PrinterName string `yaml:"printer_name"`
 }
 
 type ServerConfig struct {
@@ -83,6 +89,10 @@ func DefaultConfig() *Config {
 		Security: SecurityConfig{
 			AdminPassword:  "admin123",
 			SessionTimeout: 3600,
+		},
+		Printer: PrinterConfig{
+			Enabled:     true,
+			PrinterName: "ECO80",
 		},
 	}
 }

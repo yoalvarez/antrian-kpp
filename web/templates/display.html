@@ -8,38 +8,123 @@
 </head>
 <body class="display-body">
     <div class="display-container">
+        <!-- Header -->
         <header class="display-header">
-            <h1>Sistem Antrian</h1>
-            <div class="datetime" id="datetime"></div>
-        </header>
-
-        <main class="display-main">
-            <div class="current-call" id="current-call">
-                <div class="call-label">Nomor Antrian</div>
-                <div class="call-number" id="call-number">---</div>
-                <div class="call-counter" id="call-counter">Menunggu panggilan</div>
+            <div class="header-left">
+                <div class="header-logo">Q</div>
+                <h1>Sistem Antrian Pelayanan</h1>
             </div>
-
-            <aside class="sidebar">
-                <div class="queue-info">
-                    <div class="info-card">
-                        <span class="info-value" id="waiting-count">0</span>
-                        <span class="info-label">Antrian Menunggu</span>
+            <div class="header-right">
+                <div class="header-stats">
+                    <div class="stat-item waiting">
+                        <span class="stat-value" id="stat-waiting">0</span>
+                        <span class="stat-label">Menunggu</span>
+                    </div>
+                    <div class="stat-item called">
+                        <span class="stat-value" id="stat-called">0</span>
+                        <span class="stat-label">Dipanggil</span>
+                    </div>
+                    <div class="stat-item completed">
+                        <span class="stat-value" id="stat-completed">0</span>
+                        <span class="stat-label">Selesai</span>
                     </div>
                 </div>
+                <button class="enable-audio-btn" id="enable-audio-btn" onclick="enableAudio()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                    <span>Aktifkan Audio</span>
+                </button>
+                <div class="datetime" id="datetime"></div>
+            </div>
+        </header>
 
-                <div class="recent-calls">
-                    <h3>Riwayat Panggilan</h3>
-                    <div class="recent-list" id="recent-list">
-                        <div class="recent-item" style="opacity: 0.5;">
-                            <span class="number">---</span>
-                            <span class="counter">Belum ada</span>
+        <!-- Main Content -->
+        <div class="display-content">
+            <!-- Top Section: Recent Calls (Multi-Call Display) -->
+            <section class="recent-calls-section">
+                <div class="section-header">
+                    <div class="section-icon pulse">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                        </svg>
+                    </div>
+                    <h2>Panggilan Terbaru</h2>
+                </div>
+                <div class="recent-calls-grid" id="recent-calls-grid">
+                    <!-- Will be populated by JS -->
+                    <div class="call-card empty">
+                        <div class="call-number">---</div>
+                        <div class="call-counter">Menunggu</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Middle Section: Counter Status Grid + Video -->
+            <section class="middle-section">
+                <!-- Counter Status Grid -->
+                <div class="counter-status-section">
+                    <div class="section-header">
+                        <div class="section-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                        </div>
+                        <h2>Status Loket</h2>
+                    </div>
+                    <div class="counter-grid" id="counter-grid">
+                        <!-- Will be populated by JS -->
+                        <div class="counter-card idle">
+                            <div class="counter-name">Loket 1</div>
+                            <div class="counter-number">---</div>
+                            <div class="counter-status">Tidak Aktif</div>
                         </div>
                     </div>
                 </div>
-            </aside>
-        </main>
 
+                <!-- Video + Queue Summary -->
+                <div class="media-queue-section">
+                    <div class="video-container" id="video-container">
+                        <iframe id="youtube-player"
+                            src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=1&controls=0&loop=1&playlist=jfKfPfyJRdk"
+                            title="Video Player"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                    <div class="queue-summary" id="queue-summary">
+                        <!-- Will be populated by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Bottom Section: Call History -->
+            <section class="history-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg>
+                    </div>
+                    <h2>Riwayat Panggilan</h2>
+                </div>
+                <div class="history-list" id="history-list">
+                    <!-- Will be populated by JS -->
+                </div>
+            </section>
+        </div>
+
+        <!-- Running Text Footer -->
+        <footer class="display-footer-ticker">
+            <div class="ticker-wrap">
+                <div class="ticker-item" id="running-text">Selamat Datang di Kantor Pelayanan. Silakan ambil nomor antrian dan menunggu panggilan. Terima kasih atas kesabaran Anda.</div>
+            </div>
+        </footer>
     </div>
 
     {{if .AudioEnabled}}

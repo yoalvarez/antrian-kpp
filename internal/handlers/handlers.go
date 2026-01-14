@@ -16,6 +16,7 @@ import (
 	"queue-system/internal/config"
 	"queue-system/internal/database"
 	"queue-system/internal/models"
+	"queue-system/internal/printer"
 	"queue-system/internal/sse"
 )
 
@@ -25,6 +26,7 @@ type Handler struct {
 	config   *config.Config
 	tmpl     *template.Template
 	staticFS fs.FS
+	printer  *printer.Printer
 }
 
 func New(db *database.DB, hub *sse.Hub, cfg *config.Config, webFS embed.FS) (*Handler, error) {
@@ -38,12 +40,19 @@ func New(db *database.DB, hub *sse.Hub, cfg *config.Config, webFS embed.FS) (*Ha
 		return nil, fmt.Errorf("failed to get static fs: %w", err)
 	}
 
+	// Initialize printer
+	printerInstance := printer.New(printer.PrinterConfig{
+		Enabled:     cfg.Printer.Enabled,
+		PrinterName: cfg.Printer.PrinterName,
+	})
+
 	return &Handler{
 		db:       db,
 		hub:      hub,
 		config:   cfg,
 		tmpl:     tmpl,
 		staticFS: staticFS,
+		printer:  printerInstance,
 	}, nil
 }
 
@@ -76,8 +85,16 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/stats", h.handleStats)
 	mux.HandleFunc("/api/stats/by-type", h.handleStatsByType)
 
+	// API - Settings
+	mux.HandleFunc("/api/settings", h.handleSettings)
+
 	// API - Admin
 	mux.HandleFunc("/api/admin/reset-queues", h.handleResetQueues)
+
+	// API - Printer
+	mux.HandleFunc("/api/print-ticket", h.handlePrintTicket)
+	mux.HandleFunc("/api/printer/test", h.handlePrinterTest)
+	mux.HandleFunc("/api/printer/status", h.handlePrinterStatus)
 
 	// SSE
 	mux.HandleFunc("/api/sse/display", h.handleDisplaySSE)
@@ -306,17 +323,44 @@ func (h *Handler) handleCounterAPI(w http.ResponseWriter, r *http.Request) {
 	case "cancel":
 		h.handleCancel(w, r, counterID)
 	default:
-		// Get counter info
-		counter, err := h.db.GetCounter(counterID)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				h.jsonError(w, "Counter not found", http.StatusNotFound)
+		switch r.Method {
+		case http.MethodGet:
+			// Get counter info
+			counter, err := h.db.GetCounter(counterID)
+			if err != nil {
+				if err == sql.ErrNoRows {
+					h.jsonError(w, "Counter not found", http.StatusNotFound)
+					return
+				}
+				h.jsonError(w, "Database error", http.StatusInternalServerError)
 				return
 			}
-			h.jsonError(w, "Database error", http.StatusInternalServerError)
-			return
+			h.jsonResponse(w, counter)
+
+		case http.MethodDelete:
+			// Delete counter
+			counter, err := h.db.GetCounter(counterID)
+			if err != nil {
+				if err == sql.ErrNoRows {
+					h.jsonError(w, "Counter not found", http.StatusNotFound)
+					return
+				}
+				h.jsonError(w, "Database error", http.StatusInternalServerError)
+				return
+			}
+
+			if err := h.db.DeleteCounter(counterID); err != nil {
+				log.Printf("Failed to delete counter: %v", err)
+				h.jsonError(w, "Failed to delete counter", http.StatusInternalServerError)
+				return
+			}
+
+			log.Printf("Counter deleted: %s (%s)", counter.CounterName, counter.CounterNumber)
+			h.jsonResponse(w, map[string]string{"status": "deleted"})
+
+		default:
+			h.jsonError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
-		h.jsonResponse(w, counter)
 	}
 }
 
@@ -502,6 +546,59 @@ func (h *Handler) handleStatsByType(w http.ResponseWriter, r *http.Request) {
 	h.jsonResponse(w, counts)
 }
 
+// Settings API handler
+
+func (h *Handler) handleSettings(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		keysParam := r.URL.Query().Get("keys")
+		var keys []string
+		if keysParam != "" {
+			keys = strings.Split(keysParam, ",")
+		}
+
+		response := make(map[string]string)
+		
+		// If no keys specified, return common settings or all? 
+		// For now let's return the ones we know about if no specific key requested
+		// or better, just return what is asked.
+		
+		if len(keys) == 0 {
+		    // Default set of settings to return if none specified
+            keys = []string{"display_video_url", "display_running_text"}
+		}
+
+		for _, key := range keys {
+			val, _ := h.db.GetSetting(key)
+			response[key] = val
+		}
+
+		h.jsonResponse(w, response)
+
+	case http.MethodPost:
+		var req map[string]string
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			h.jsonError(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		for key, value := range req {
+			if err := h.db.SetSetting(key, value); err != nil {
+				h.jsonError(w, "Failed to save setting: "+key, http.StatusInternalServerError)
+				return
+			}
+		}
+		
+		// Broadcast setting update to display
+		h.hub.BroadcastDisplay("settings_updated", req)
+
+		h.jsonResponse(w, map[string]string{"status": "saved"})
+
+	default:
+		h.jsonError(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
 // Admin handler - Reset queues hari ini
 func (h *Handler) handleResetQueues(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -649,4 +746,129 @@ func (h *Handler) handleCounterSSE(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.hub.ServeCounterSSE(w, r, id)
+}
+
+// Printer handlers
+
+func (h *Handler) handlePrintTicket(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.jsonError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		QueueNumber string `json:"queue_number"`
+		TypeName    string `json:"type_name"`
+		DateTime    string `json:"date_time"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.QueueNumber == "" {
+		h.jsonError(w, "Queue number is required", http.StatusBadRequest)
+		return
+	}
+
+	// Set default values if not provided
+	if req.TypeName == "" {
+		req.TypeName = "Umum"
+	}
+	if req.DateTime == "" {
+		req.DateTime = time.Now().Format("02/01/2006, 15:04:05")
+	}
+
+	// Load ticket template from settings
+	template := h.loadTicketTemplate()
+
+	// Print ticket
+	err := h.printer.PrintTicket(printer.TicketData{
+		QueueNumber: req.QueueNumber,
+		TypeName:    req.TypeName,
+		DateTime:    req.DateTime,
+	}, template)
+
+	if err != nil {
+		log.Printf("Print error: %v", err)
+		h.jsonError(w, "Failed to print ticket: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Printed ticket: %s (%s)", req.QueueNumber, req.TypeName)
+	h.jsonResponse(w, map[string]string{
+		"status":  "printed",
+		"message": "Ticket printed successfully",
+	})
+}
+
+// loadTicketTemplate loads ticket template settings from database
+func (h *Handler) loadTicketTemplate() printer.TicketTemplate {
+	template := printer.DefaultTemplate()
+
+	// Load text settings
+	if val, _ := h.db.GetSetting("ticket_header"); val != "" {
+		template.Header = val
+	}
+	if val, _ := h.db.GetSetting("ticket_subheader"); val != "" {
+		template.Subheader = val
+	}
+	if val, _ := h.db.GetSetting("ticket_title"); val != "" {
+		template.Title = val
+	}
+	if val, _ := h.db.GetSetting("ticket_footer1"); val != "" {
+		template.Footer1 = val
+	}
+	if val, _ := h.db.GetSetting("ticket_footer2"); val != "" {
+		template.Footer2 = val
+	}
+	if val, _ := h.db.GetSetting("ticket_thanks"); val != "" {
+		template.Thanks = val
+	}
+
+	// Load visibility settings (default to true)
+	if val, _ := h.db.GetSetting("ticket_show_subheader"); val == "false" {
+		template.ShowSubheader = false
+	}
+	if val, _ := h.db.GetSetting("ticket_show_type"); val == "false" {
+		template.ShowType = false
+	}
+	if val, _ := h.db.GetSetting("ticket_show_datetime"); val == "false" {
+		template.ShowDatetime = false
+	}
+	if val, _ := h.db.GetSetting("ticket_show_footer"); val == "false" {
+		template.ShowFooter = false
+	}
+	if val, _ := h.db.GetSetting("ticket_show_thanks"); val == "false" {
+		template.ShowThanks = false
+	}
+
+	return template
+}
+
+func (h *Handler) handlePrinterTest(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		h.jsonError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := h.printer.TestPrint()
+	if err != nil {
+		log.Printf("Test print error: %v", err)
+		h.jsonError(w, "Test print failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.jsonResponse(w, map[string]string{
+		"status":  "success",
+		"message": "Test print sent to printer",
+	})
+}
+
+func (h *Handler) handlePrinterStatus(w http.ResponseWriter, r *http.Request) {
+	h.jsonResponse(w, map[string]interface{}{
+		"enabled":      h.printer.IsEnabled(),
+		"printer_name": h.printer.GetPrinterName(),
+	})
 }

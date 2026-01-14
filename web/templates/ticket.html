@@ -95,24 +95,59 @@
             }
         }
 
-        // Show ticket modal
+        // Show ticket modal and auto-print
         async function showTicket(queue, typeCode) {
+            const currentTime = new Date().toLocaleString('id-ID');
+
+            // Update modal display
             document.getElementById('ticket-number').textContent = queue.queue_number;
-            document.getElementById('ticket-time').textContent = new Date().toLocaleString('id-ID');
+            document.getElementById('ticket-time').textContent = currentTime;
 
             // Get type name
+            let typeName = typeCode;
             try {
                 const response = await fetch('/api/queue-types?active=true');
                 const types = await response.json();
                 const type = types.find(t => t.code === typeCode);
                 if (type) {
-                    document.getElementById('ticket-type').textContent = type.name;
+                    typeName = type.name;
                 }
             } catch (e) {
-                document.getElementById('ticket-type').textContent = typeCode;
+                console.error('Failed to get type name:', e);
             }
 
+            // Update type name in modal
+            document.getElementById('ticket-type').textContent = typeName;
+
+            // Show modal
             document.getElementById('ticket-modal').classList.add('show');
+
+            // Auto print ticket to thermal printer via backend API
+            printTicket(queue.queue_number, typeName, currentTime);
+        }
+
+        // Print ticket to thermal printer via backend API (silent print)
+        async function printTicket(queueNumber, typeName, dateTime) {
+            try {
+                const response = await fetch('/api/print-ticket', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        queue_number: queueNumber,
+                        type_name: typeName,
+                        date_time: dateTime
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    console.error('Print failed:', error.error);
+                }
+            } catch (error) {
+                console.error('Failed to print ticket:', error);
+            }
         }
 
         // Close ticket modal

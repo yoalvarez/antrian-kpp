@@ -678,6 +678,38 @@ func (d *DB) SetCounterCurrentQueue(counterID int64, queueID *int64) error {
 	return err
 }
 
+func (d *DB) DeleteCounter(id int64) error {
+	tx, err := d.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Update queues that reference this counter (set counter_id to NULL)
+	_, err = tx.Exec(`UPDATE queues SET counter_id = NULL WHERE counter_id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("failed to update queues: %w", err)
+	}
+
+	// Delete call history for this counter
+	_, err = tx.Exec(`DELETE FROM call_history WHERE counter_id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete call history: %w", err)
+	}
+
+	// Delete the counter
+	_, err = tx.Exec(`DELETE FROM counters WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete counter: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
 // Call history operations
 
 func (d *DB) AddCallHistory(queueID, counterID int64, action models.CallAction) error {

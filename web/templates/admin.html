@@ -64,6 +64,113 @@
                 </div>
             </section>
 
+            <section class="settings-section">
+                <div class="section-header">
+                    <h2>Pengaturan Display</h2>
+                </div>
+                <div class="settings-card">
+                    <form id="display-settings-form" onsubmit="saveSettings(event)">
+                        <div class="form-group">
+                            <label for="setting-video-url">Video YouTube (URL atau ID)</label>
+                            <input type="text" id="setting-video-url" class="form-control" placeholder="Contoh: https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+                            <small>Masukkan URL lengkap atau ID video YouTube.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="setting-running-text">Running Text</label>
+                            <textarea id="setting-running-text" class="form-control" rows="3" placeholder="Masukkan teks pengumuman yang akan berjalan..."></textarea>
+                        </div>
+                        <div class="form-actions" style="justify-content: flex-start;">
+                            <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <section class="ticket-design-section">
+                <div class="section-header">
+                    <h2>Desain Tiket Antrian</h2>
+                </div>
+                <div class="ticket-design-container">
+                    <div class="ticket-design-form">
+                        <form id="ticket-design-form" onsubmit="saveTicketDesign(event)">
+                            <div class="form-group">
+                                <label for="ticket-header">Header Tiket</label>
+                                <input type="text" id="ticket-header" class="form-control" placeholder="SISTEM ANTRIAN" maxlength="32">
+                                <small>Maksimal 32 karakter</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="ticket-subheader">Sub Header</label>
+                                <input type="text" id="ticket-subheader" class="form-control" placeholder="KPP PRATAMA" maxlength="32">
+                                <small>Nama instansi/kantor (opsional)</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="ticket-title">Judul Nomor</label>
+                                <input type="text" id="ticket-title" class="form-control" placeholder="NOMOR ANTRIAN ANDA" maxlength="32">
+                            </div>
+                            <div class="form-group">
+                                <label for="ticket-footer1">Footer Baris 1</label>
+                                <input type="text" id="ticket-footer1" class="form-control" placeholder="Mohon menunggu hingga" maxlength="32">
+                            </div>
+                            <div class="form-group">
+                                <label for="ticket-footer2">Footer Baris 2</label>
+                                <input type="text" id="ticket-footer2" class="form-control" placeholder="nomor Anda dipanggil" maxlength="32">
+                            </div>
+                            <div class="form-group">
+                                <label for="ticket-thanks">Pesan Terima Kasih</label>
+                                <input type="text" id="ticket-thanks" class="form-control" placeholder="Terima kasih" maxlength="32">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Elemen yang Ditampilkan:</label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="ticket-show-subheader" checked> Sub Header
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="ticket-show-type" checked> Jenis Layanan
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="ticket-show-datetime" checked> Tanggal & Waktu
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="ticket-show-footer" checked> Footer
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="ticket-show-thanks" checked> Pesan Terima Kasih
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-actions" style="justify-content: flex-start; gap: 0.5rem;">
+                                <button type="submit" class="btn btn-primary">Simpan Desain</button>
+                                <button type="button" class="btn" onclick="testPrintTicket()">Test Print</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="ticket-preview-container">
+                        <h4>Preview Tiket</h4>
+                        <div class="ticket-preview" id="ticket-preview">
+                            <div class="preview-header" id="preview-header">SISTEM ANTRIAN</div>
+                            <div class="preview-subheader" id="preview-subheader">KPP PRATAMA</div>
+                            <div class="preview-separator">--------------------------------</div>
+                            <div class="preview-title" id="preview-title">NOMOR ANTRIAN ANDA</div>
+                            <div class="preview-number">A001</div>
+                            <div class="preview-type" id="preview-type-label">Umum</div>
+                            <div class="preview-separator">--------------------------------</div>
+                            <div class="preview-datetime" id="preview-datetime">14/01/2026, 12:00:00</div>
+                            <div class="preview-separator">--------------------------------</div>
+                            <div class="preview-footer" id="preview-footer">
+                                <div id="preview-footer1">Mohon menunggu hingga</div>
+                                <div id="preview-footer2">nomor Anda dipanggil</div>
+                            </div>
+                            <div class="preview-thanks" id="preview-thanks">Terima kasih</div>
+                        </div>
+                        <small class="preview-note">Preview simulasi untuk printer thermal 80mm</small>
+                    </div>
+                </div>
+            </section>
+
             <section class="queues-section">
                 <div class="section-header">
                     <h2>Daftar Antrian</h2>
