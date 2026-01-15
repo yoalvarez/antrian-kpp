@@ -83,6 +83,15 @@ body {
     background: #b91c1c;
 }
 
+.btn-icon {
+    padding: 0.375rem;
+    line-height: 1;
+}
+
+.btn-icon svg {
+    display: block;
+}
+
 /* Admin styles */
 .admin-container {
     max-width: 1200px;

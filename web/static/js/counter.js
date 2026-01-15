@@ -5,6 +5,16 @@ let hasCurrentQueue = false;
 let selectedQueueType = null;
 let sseConnected = false;
 
+// Check if a date string is from today
+function isToday(dateStr) {
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    const today = new Date();
+    return date.getFullYear() === today.getFullYear() &&
+           date.getMonth() === today.getMonth() &&
+           date.getDate() === today.getDate();
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     loadCounterData();
@@ -70,7 +80,11 @@ function updateCounterUI(counter) {
     const btnComplete = document.getElementById('btn-complete');
     const btnCancel = document.getElementById('btn-cancel');
 
-    if (counter.current_queue) {
+    // Check if current_queue exists and is from today
+    const queueDate = counter.current_queue?.called_at || counter.current_queue?.created_at;
+    const hasValidQueue = counter.current_queue && isToday(queueDate);
+
+    if (hasValidQueue) {
         hasCurrentQueue = true;
         currentQueue.textContent = counter.current_queue.queue_number;
         queueStatus.textContent = 'Sedang Dilayani';

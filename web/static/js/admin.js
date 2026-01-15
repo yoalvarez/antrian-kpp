@@ -104,6 +104,27 @@ async function loadQueueTypes() {
     }
 }
 
+// Check if a date string is from today
+function isToday(dateStr) {
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    const today = new Date();
+    return date.getFullYear() === today.getFullYear() &&
+           date.getMonth() === today.getMonth() &&
+           date.getDate() === today.getDate();
+}
+
+// Get current queue display (only show if from today)
+function getCurrentQueueDisplay(counter) {
+    if (!counter.current_queue) return '';
+
+    // Check if the queue is from today (using called_at or created_at)
+    const queueDate = counter.current_queue.called_at || counter.current_queue.created_at;
+    if (!isToday(queueDate)) return '';
+
+    return `<p style="color: #2563eb;">Antrian: ${counter.current_queue.queue_number}</p>`;
+}
+
 // Load counters
 async function loadCounters() {
     try {
@@ -117,19 +138,33 @@ async function loadCounters() {
             return;
         }
 
+        // Sort counters numerically by counter_number
+        counters.sort((a, b) => {
+            const numA = parseInt(a.counter_number, 10) || 0;
+            const numB = parseInt(b.counter_number, 10) || 0;
+            return numA - numB;
+        });
+
         container.innerHTML = counters.map(counter => `
             <div class="counter-card">
                 <div class="counter-info">
                     <h3>${counter.counter_name}</h3>
                     <p>Loket ${counter.counter_number}</p>
-                    ${counter.current_queue ? `<p style="color: #2563eb;">Antrian: ${counter.current_queue.queue_number}</p>` : ''}
+                    ${getCurrentQueueDisplay(counter)}
                 </div>
                 <div class="counter-actions">
                     <span class="counter-status ${counter.is_active ? 'active' : 'inactive'}">
                         ${counter.is_active ? 'Aktif' : 'Tidak Aktif'}
                     </span>
                     <a href="/counter/${counter.id}" class="btn btn-sm" style="margin-left: 0.5rem;">Buka</a>
-                    <button class="btn btn-sm btn-danger" onclick="deleteCounter(${counter.id}, '${counter.counter_name}')" style="margin-left: 0.5rem;">Hapus</button>
+                    <button class="btn btn-sm btn-danger btn-icon" onclick="deleteCounter(${counter.id}, '${counter.counter_name}')" style="margin-left: 0.5rem;" title="Hapus Loket">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    </button>
                 </div>
             </div>
         `).join('');
