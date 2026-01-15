@@ -11,6 +11,16 @@ const MAX_RECENT_CALLS = 6;      // Multi-call display cards
 const MAX_HISTORY = 15;          // History list items
 const CALL_HIGHLIGHT_DURATION = 5000; // How long to highlight new calls
 
+// Check if a date string is from today
+function isToday(dateStr) {
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    const today = new Date();
+    return date.getFullYear() === today.getFullYear() &&
+           date.getMonth() === today.getMonth() &&
+           date.getDate() === today.getDate();
+}
+
 // Data stores
 let recentCalls = [];           // For multi-call display
 let callHistory = [];           // For history section
@@ -107,9 +117,9 @@ async function loadCalledQueues() {
         // Reset counter status
         counterStatus = {};
 
-        // Map called queues to their counters
+        // Map called queues to their counters (only if from today)
         queues.forEach(q => {
-            if (q.counter_id) {
+            if (q.counter_id && isToday(q.called_at || q.created_at)) {
                 counterStatus[q.counter_id] = {
                     queue_number: q.queue_number,
                     queue_type: q.queue_type,
@@ -153,9 +163,11 @@ function renderCounterGrid() {
 
     container.innerHTML = countersCache.map(counter => {
         const status = counterStatus[counter.id];
-        const statusClass = status ? 'active' : 'idle';
-        const queueNumber = status ? status.queue_number : '---';
-        const statusText = status ? 'Melayani' : 'Tidak Aktif';
+        // Only show status if from today
+        const isTodayStatus = status && isToday(status.called_at);
+        const statusClass = isTodayStatus ? 'active' : 'idle';
+        const queueNumber = isTodayStatus ? status.queue_number : '---';
+        const statusText = isTodayStatus ? 'Melayani' : 'Tidak Aktif';
 
         return `
             <div class="counter-card ${statusClass}" data-counter-id="${counter.id}">
@@ -177,10 +189,13 @@ function updateCounterGridStatus() {
         const numberEl = card.querySelector('.counter-number');
         const statusEl = card.querySelector('.counter-status');
 
+        // Only show status if from today
+        const isTodayStatus = status && isToday(status.called_at);
+
         // Update classes
         card.classList.remove('active', 'calling', 'idle');
 
-        if (status) {
+        if (isTodayStatus) {
             card.classList.add('active');
             numberEl.textContent = status.queue_number;
             statusEl.textContent = 'Melayani';

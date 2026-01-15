@@ -749,8 +749,8 @@ func (d *DB) GetStats() (*models.Stats, error) {
 	stats := &models.Stats{}
 
 	d.QueryRow(`SELECT COUNT(*) FROM queues WHERE DATE(created_at) = DATE('now', 'localtime')`).Scan(&stats.TotalQueues)
-	d.QueryRow(`SELECT COUNT(*) FROM queues WHERE status = 'waiting'`).Scan(&stats.WaitingQueues)
-	d.QueryRow(`SELECT COUNT(*) FROM queues WHERE status = 'called'`).Scan(&stats.CalledQueues)
+	d.QueryRow(`SELECT COUNT(*) FROM queues WHERE status = 'waiting' AND DATE(created_at) = DATE('now', 'localtime')`).Scan(&stats.WaitingQueues)
+	d.QueryRow(`SELECT COUNT(*) FROM queues WHERE status = 'called' AND DATE(created_at) = DATE('now', 'localtime')`).Scan(&stats.CalledQueues)
 	d.QueryRow(`SELECT COUNT(*) FROM queues WHERE status = 'completed' AND DATE(created_at) = DATE('now', 'localtime')`).Scan(&stats.CompletedQueues)
 	d.QueryRow(`SELECT COUNT(*) FROM queues WHERE status = 'cancelled' AND DATE(created_at) = DATE('now', 'localtime')`).Scan(&stats.CancelledQueues)
 	d.QueryRow(`SELECT COUNT(*) FROM counters WHERE is_active = 1`).Scan(&stats.ActiveCounters)
