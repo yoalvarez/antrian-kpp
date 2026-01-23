@@ -13,6 +13,7 @@
             <nav>
                 <a href="/ticket" target="_blank">Ambil Antrian</a>
                 <a href="/display" target="_blank">Display</a>
+                <a href="/counters" target="_blank">Pilih Loket</a>
                 <button class="btn btn-danger" onclick="showResetModal()">Reset Antrian</button>
             </nav>
         </header>
@@ -167,6 +168,232 @@
                             <div class="preview-thanks" id="preview-thanks">Terima kasih</div>
                         </div>
                         <small class="preview-note">Preview simulasi untuk printer thermal 80mm</small>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pengaturan Tampilan Ticket -->
+            <section class="ticket-appearance-section">
+                <div class="section-header">
+                    <h2>Pengaturan Halaman Ambil Antrian</h2>
+                </div>
+                <div class="settings-card">
+                    <form id="ticket-appearance-form" onsubmit="saveTicketAppearance(event)">
+                        <div class="settings-grid">
+                            <div class="form-group">
+                                <label for="ticket-page-title">Judul Halaman</label>
+                                <input type="text" id="ticket-page-title" class="form-control" placeholder="Sistem Antrian" maxlength="50">
+                            </div>
+                            <div class="form-group">
+                                <label for="ticket-page-subtitle">Sub Judul</label>
+                                <input type="text" id="ticket-page-subtitle" class="form-control" placeholder="KPP Pratama" maxlength="50">
+                            </div>
+                            <div class="form-group">
+                                <label for="ticket-welcome-text">Teks Sambutan</label>
+                                <input type="text" id="ticket-welcome-text" class="form-control" placeholder="Selamat Datang" maxlength="50">
+                            </div>
+                            <div class="form-group">
+                                <label for="ticket-instruction-text">Teks Instruksi</label>
+                                <input type="text" id="ticket-instruction-text" class="form-control" placeholder="Silakan pilih jenis layanan..." maxlength="100">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Opsi Tambahan:</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="ticket-auto-print" checked> Auto Print Tiket
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="ticket-show-queue-count" checked> Tampilkan Jumlah Antrian
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-actions" style="justify-content: flex-start;">
+                            <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Pengaturan Tampilan Display -->
+            <section class="display-appearance-section">
+                <div class="section-header">
+                    <h2>Pengaturan Halaman Display</h2>
+                </div>
+                <div class="settings-card">
+                    <form id="display-appearance-form" onsubmit="saveDisplayAppearance(event)">
+                        <h4 style="margin-bottom: 1rem; color: var(--text-color);">Header & Branding</h4>
+                        <div class="settings-grid">
+                            <div class="form-group">
+                                <label for="display-title">Judul Display</label>
+                                <input type="text" id="display-title" class="form-control" placeholder="Sistem Antrian Pelayanan" maxlength="50">
+                            </div>
+                            <div class="form-group">
+                                <label for="display-logo-text">Teks Logo</label>
+                                <input type="text" id="display-logo-text" class="form-control" placeholder="Q" maxlength="3">
+                                <small>1-3 karakter untuk logo</small>
+                            </div>
+                        </div>
+
+                        <h4 style="margin: 1.5rem 0 1rem; color: var(--text-color);">Layout & Widget</h4>
+                        <div class="settings-grid">
+                            <div class="form-group">
+                                <label for="display-recent-calls-count">Jumlah Card Panggilan</label>
+                                <input type="number" id="display-recent-calls-count" class="form-control" min="3" max="10" value="6">
+                                <small>3-10 card panggilan terbaru</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="display-history-count">Jumlah Riwayat</label>
+                                <input type="number" id="display-history-count" class="form-control" min="5" max="30" value="15">
+                                <small>5-30 item riwayat</small>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Widget yang Ditampilkan:</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="display-show-video" checked> Video YouTube
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="display-show-stats" checked> Statistik Header
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="display-show-history" checked> Riwayat Panggilan
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="display-show-queue-summary" checked> Ringkasan Antrian
+                                </label>
+                            </div>
+                        </div>
+
+                        <h4 style="margin: 1.5rem 0 1rem; color: var(--text-color);">Suara & TTS</h4>
+                        <div class="settings-grid">
+                            <div class="form-group">
+                                <label for="display-tts-rate">Kecepatan Suara TTS</label>
+                                <input type="range" id="display-tts-rate" class="form-control" min="0.5" max="1.0" step="0.1" value="0.6">
+                                <small>Lambat (0.5) - Normal (1.0): <span id="tts-rate-value">0.6</span></small>
+                            </div>
+                            <div class="form-group">
+                                <label for="display-ticker-speed">Kecepatan Running Text</label>
+                                <input type="range" id="display-ticker-speed" class="form-control" min="20" max="80" step="5" value="45">
+                                <small>Cepat (20s) - Lambat (80s): <span id="ticker-speed-value">45</span>s</small>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="display-sound-enabled" checked> Aktifkan Suara Panggilan
+                            </label>
+                        </div>
+
+                        <div class="form-actions" style="justify-content: flex-start;">
+                            <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Pengaturan Sistem -->
+            <section class="system-settings-section">
+                <div class="section-header">
+                    <h2>Pengaturan Sistem</h2>
+                </div>
+                <div class="settings-card">
+                    <form id="system-settings-form" onsubmit="saveSystemSettings(event)">
+                        <h4 style="margin-bottom: 1rem; color: var(--text-color);">Jam Operasional</h4>
+                        <div class="settings-grid">
+                            <div class="form-group">
+                                <label for="system-open-time">Jam Buka</label>
+                                <input type="time" id="system-open-time" class="form-control" value="08:00">
+                            </div>
+                            <div class="form-group">
+                                <label for="system-close-time">Jam Tutup</label>
+                                <input type="time" id="system-close-time" class="form-control" value="16:00">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Hari Operasional:</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label"><input type="checkbox" id="day-mon" checked> Senin</label>
+                                <label class="checkbox-label"><input type="checkbox" id="day-tue" checked> Selasa</label>
+                                <label class="checkbox-label"><input type="checkbox" id="day-wed" checked> Rabu</label>
+                                <label class="checkbox-label"><input type="checkbox" id="day-thu" checked> Kamis</label>
+                                <label class="checkbox-label"><input type="checkbox" id="day-fri" checked> Jumat</label>
+                                <label class="checkbox-label"><input type="checkbox" id="day-sat"> Sabtu</label>
+                                <label class="checkbox-label"><input type="checkbox" id="day-sun"> Minggu</label>
+                            </div>
+                        </div>
+
+                        <h4 style="margin: 1.5rem 0 1rem; color: var(--text-color);">Batas Antrian</h4>
+                        <div class="settings-grid">
+                            <div class="form-group">
+                                <label for="system-max-queue-daily">Maksimal Antrian per Hari</label>
+                                <input type="number" id="system-max-queue-daily" class="form-control" min="0" value="0" placeholder="0 = tidak terbatas">
+                                <small>0 = tidak ada batas</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="system-max-queue-per-type">Maksimal per Jenis Antrian</label>
+                                <input type="number" id="system-max-queue-per-type" class="form-control" min="0" value="0" placeholder="0 = tidak terbatas">
+                                <small>0 = tidak ada batas</small>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="system-enforce-hours" checked> Terapkan Jam Operasional
+                            </label>
+                            <small style="display: block; margin-top: 0.25rem;">Jika aktif, pengambilan antrian hanya bisa dilakukan saat jam operasional</small>
+                        </div>
+
+                        <div class="form-actions" style="justify-content: flex-start;">
+                            <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Laporan & Statistik -->
+            <section class="reports-section">
+                <div class="section-header">
+                    <h2>Laporan & Statistik</h2>
+                </div>
+                <div class="reports-container">
+                    <div class="report-filters">
+                        <div class="filter-group">
+                            <label for="report-start-date">Dari Tanggal:</label>
+                            <input type="date" id="report-start-date" class="filter-input">
+                        </div>
+                        <div class="filter-group">
+                            <label for="report-end-date">Sampai Tanggal:</label>
+                            <input type="date" id="report-end-date" class="filter-input">
+                        </div>
+                        <button class="btn btn-primary" onclick="loadReport()">Tampilkan Laporan</button>
+                        <button class="btn" onclick="exportReport()">Export CSV</button>
+                    </div>
+                    <div class="report-summary" id="report-summary">
+                        <div class="report-card">
+                            <span class="report-value" id="report-total">0</span>
+                            <span class="report-label">Total Antrian</span>
+                        </div>
+                        <div class="report-card">
+                            <span class="report-value" id="report-completed">0</span>
+                            <span class="report-label">Selesai Dilayani</span>
+                        </div>
+                        <div class="report-card">
+                            <span class="report-value" id="report-cancelled">0</span>
+                            <span class="report-label">Dibatalkan/Lewat</span>
+                        </div>
+                        <div class="report-card">
+                            <span class="report-value" id="report-avg-time">-</span>
+                            <span class="report-label">Rata-rata Waktu Tunggu</span>
+                        </div>
+                    </div>
+                    <div class="report-chart-container">
+                        <h4>Grafik Antrian per Hari</h4>
+                        <div class="report-chart" id="report-chart">
+                            <p style="color: var(--text-muted); text-align: center; padding: 2rem;">Pilih rentang tanggal dan klik "Tampilkan Laporan"</p>
+                        </div>
+                    </div>
+                    <div class="report-by-type" id="report-by-type">
+                        <!-- Will be populated by JS -->
                     </div>
                 </div>
             </section>

@@ -6,10 +6,16 @@ let audioEnabled = false;
 let lastQueueCalled = null;
 let sseConnected = false;
 
-// Configuration
-const MAX_RECENT_CALLS = 6;      // Multi-call display cards
-const MAX_HISTORY = 15;          // History list items
+// Configuration (will be loaded from settings)
+let MAX_RECENT_CALLS = 6;       // Multi-call display cards
+let MAX_HISTORY = 15;           // History list items
 const CALL_HIGHLIGHT_DURATION = 5000; // How long to highlight new calls
+
+// Settings from server
+let displaySettings = {};
+let TTS_RATE = 0.6;
+let TICKER_SPEED = 45;
+let SOUND_ENABLED = true;
 
 // Check if a date string is from today
 function isToday(dateStr) {
@@ -32,6 +38,14 @@ let countersCache = [];         // Cache counters
 let audioQueue = [];
 let isPlayingAudio = false;
 
+// Update ticker speed dynamically
+function updateTickerSpeed() {
+    const tickerItem = document.querySelector('.ticker-item');
+    if (tickerItem) {
+        tickerItem.style.animationDuration = TICKER_SPEED + 's';
+    }
+}
+
 // Initialize
 document.addEventListener("DOMContentLoaded", function () {
     updateDateTime();
@@ -45,14 +59,14 @@ document.addEventListener("DOMContentLoaded", function () {
     loadCalledQueues();
     connectSSE();
 
-    // Auto-refresh stats every 10 seconds
-    setInterval(loadInitialData, 10000);
+    // Auto-refresh stats every 5 seconds
+    setInterval(loadInitialData, 5000);
 
-    // Refresh counter status every 15 seconds
-    setInterval(loadCalledQueues, 15000);
+    // Refresh counter status every 5 seconds
+    setInterval(loadCalledQueues, 5000);
 
-    // Polling fallback - check for updates every 3 seconds if SSE is down
-    setInterval(pollForUpdates, 3000);
+    // Polling fallback - check for updates every 2 seconds if SSE is down
+    setInterval(pollForUpdates, 2000);
 });
 
 // Update date time
@@ -283,6 +297,7 @@ async function loadSettings() {
     try {
         const response = await fetch('/api/settings');
         const settings = await response.json();
+        displaySettings = settings; // Store globally
         updateDisplaySettings(settings);
     } catch (error) {
         console.error("Failed to load settings:", error);
@@ -291,6 +306,65 @@ async function loadSettings() {
 
 // Update display UI with settings
 function updateDisplaySettings(settings) {
+    // Apply header branding
+    if (settings.display_title) {
+        const titleEl = document.getElementById('header-title');
+        if (titleEl) titleEl.textContent = settings.display_title;
+        document.title = settings.display_title;
+    }
+
+    if (settings.display_logo_text) {
+        const logoEl = document.getElementById('header-logo');
+        if (logoEl) logoEl.textContent = settings.display_logo_text;
+    }
+
+    // Update configuration values
+    if (settings.display_recent_calls_count) {
+        const newCount = parseInt(settings.display_recent_calls_count) || 6;
+        if (newCount !== MAX_RECENT_CALLS) {
+            MAX_RECENT_CALLS = newCount;
+            renderRecentCalls();
+        }
+    }
+    if (settings.display_history_count) {
+        const newCount = parseInt(settings.display_history_count) || 15;
+        if (newCount !== MAX_HISTORY) {
+            MAX_HISTORY = newCount;
+            renderCallHistory();
+        }
+    }
+    if (settings.display_tts_rate) {
+        TTS_RATE = parseFloat(settings.display_tts_rate) || 0.6;
+    }
+    if (settings.display_ticker_speed) {
+        TICKER_SPEED = parseInt(settings.display_ticker_speed) || 45;
+        updateTickerSpeed();
+    }
+
+    SOUND_ENABLED = settings.display_sound_enabled !== 'false';
+
+    // Toggle widget visibility
+    const videoContainer = document.querySelector('.video-container');
+    if (videoContainer) {
+        videoContainer.style.display = settings.display_show_video === 'false' ? 'none' : '';
+    }
+
+    const statsEl = document.getElementById('header-stats');
+    if (statsEl) {
+        statsEl.style.display = settings.display_show_stats === 'false' ? 'none' : '';
+    }
+
+    const historySection = document.querySelector('.history-section');
+    if (historySection) {
+        historySection.style.display = settings.display_show_history === 'false' ? 'none' : '';
+    }
+
+    const queueSummary = document.querySelector('.queue-summary');
+    if (queueSummary) {
+        queueSummary.style.display = settings.display_show_queue_summary === 'false' ? 'none' : '';
+    }
+
+    // Video URL
     if (settings.display_video_url) {
         let url = settings.display_video_url;
         let videoId = '';
@@ -314,6 +388,7 @@ function updateDisplaySettings(settings) {
         }
     }
 
+    // Running text
     if (settings.display_running_text) {
         const ticker = document.getElementById('running-text');
         if (ticker && ticker.textContent !== settings.display_running_text) {
@@ -673,20 +748,27 @@ function playBell() {
 
 // Announce queue number using TTS
 function announceQueue(queueNumber, counterName, onComplete) {
+    // Check if sound is enabled
+    if (!SOUND_ENABLED) {
+        if (onComplete) onComplete();
+        return;
+    }
+
     if (!("speechSynthesis" in window)) {
         if (onComplete) onComplete();
         return;
     }
 
     const formattedNumber = formatQueueNumberForSpeech(queueNumber);
-    const text = `Nomor antrian ${formattedNumber}, silakan menuju ${counterName}`;
+    const formattedCounter = formatCounterNameForSpeech(counterName);
+    const text = `Nomor antrian ${formattedNumber}, silakan menuju ${formattedCounter}`;
 
     const voices = speechSynthesis.getVoices();
     const indonesianVoice = voices.find((v) => v.lang.startsWith("id"));
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "id-ID";
-    utterance.rate = 0.6;
+    utterance.rate = TTS_RATE; // Use configurable rate
     utterance.pitch = 1;
     utterance.volume = 1;
     if (indonesianVoice) {
@@ -712,10 +794,88 @@ function formatQueueNumberForSpeech(queueNumber) {
     const letters = parts[1];
     const numbers = parseInt(parts[2]);
 
-    const letterSpoken = letters.split("").join(" ");
+    // Map letters to clearer Indonesian pronunciation
+    const letterMap = {
+        'A': 'A',
+        'B': 'B',
+        'C': 'C',
+        'D': 'D',
+        'E': 'E',
+        'F': 'F',
+        'G': 'G',
+        'H': 'H',
+        'I': 'I',
+        'J': 'J',
+        'K': 'K',
+        'L': 'L',
+        'M': 'M',
+        'N': 'N',
+        'O': 'O',
+        'P': 'P',
+        'Q': 'Q',
+        'R': 'R',
+        'S': 'S',
+        'T': 'T',
+        'U': 'U',
+        'V': 'V',
+        'W': 'W',
+        'X': 'EKS',
+        'Y': 'Y',
+        'Z': 'Z'
+    };
+
+    const letterSpoken = letters.toUpperCase().split("").map(l => letterMap[l] || l).join(", ");
     const numberSpoken = terbilang(numbers);
 
-    return `${letterSpoken} ${numberSpoken}`;
+    return `${letterSpoken}, ${numberSpoken}`;
+}
+
+// Format counter name for speech (e.g., "Loket A 1" -> "Loket AA satu")
+function formatCounterNameForSpeech(counterName) {
+    if (!counterName) return counterName;
+
+    // Map letters to clearer Indonesian pronunciation
+    const letterMap = {
+        'A': 'AA',
+        'B': 'BE',
+        'C': 'CE',
+        'D': 'DE',
+        'E': 'EE',
+        'F': 'EF',
+        'G': 'GE',
+        'H': 'HA',
+        'I': 'II',
+        'J': 'JE',
+        'K': 'KA',
+        'L': 'EL',
+        'M': 'EM',
+        'N': 'EN',
+        'O': 'OO',
+        'P': 'PE',
+        'Q': 'KI',
+        'R': 'ER',
+        'S': 'ES',
+        'T': 'TE',
+        'U': 'UU',
+        'V': 'VE',
+        'W': 'WE',
+        'X': 'EKS',
+        'Y': 'YE',
+        'Z': 'ZET'
+    };
+
+    // Replace standalone letters and numbers in counter name
+    // Match pattern like "Loket A 1" or "Counter B 2"
+    return counterName.replace(/([A-Za-z]+)\s+([A-Za-z])\s+(\d+)/gi, (match, prefix, letter, num) => {
+        const spokenLetter = letterMap[letter.toUpperCase()] || letter;
+        const spokenNumber = terbilang(parseInt(num));
+        return `${prefix} ${spokenLetter} ${spokenNumber}`;
+    }).replace(/([A-Za-z])\s+(\d+)/gi, (match, letter, num) => {
+        // Handle pattern like "A 1" without prefix
+        const spokenLetter = letterMap[letter.toUpperCase()] || letter;
+        const spokenNumber = terbilang(parseInt(num));
+        return `${spokenLetter} ${spokenNumber}`;
+    });
 }
 
 // Convert number to Indonesian words

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pilih Loket - Sistem Antrian</title>
+    <link rel="stylesheet" href="/static/css/counters.css">
+</head>
+<body class="counters-body">
+    <div class="counters-container">
+        <header class="counters-header">
+            <h1>Pilih Loket</h1>
+            <p class="subtitle">Silakan pilih loket untuk mulai melayani antrian</p>
+            <div class="datetime" id="datetime"></div>
+        </header>
+
+        <main class="counters-main">
+            <div class="counters-grid" id="counters-grid">
+                <!-- Counters will be loaded here -->
+            </div>
+
+            <div class="empty-state" id="empty-state" style="display: none;">
+                <div class="empty-icon">&#128187;</div>
+                <h3>Belum Ada Loket</h3>
+                <p>Silakan tambahkan loket melalui panel admin terlebih dahulu.</p>
+                <a href="/admin" class="btn btn-primary">Buka Admin Panel</a>
+            </div>
+        </main>
+
+        <footer class="counters-footer">
+            <a href="/admin">Admin Panel</a>
+            <span class="separator">|</span>
+            <a href="/display">Display Antrian</a>
+            <span class="separator">|</span>
+            <a href="/ticket">Ambil Antrian</a>
+        </footer>
+    </div>
+
+    <script>
+        // Update date time
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            document.getElementById('datetime').textContent = now.toLocaleDateString('id-ID', options);
+        }
+
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+
+        // Load counters
+        async function loadCounters() {
+            try {
+                const response = await fetch('/api/counters');
+                const counters = await response.json();
+
+                const grid = document.getElementById('counters-grid');
+                const emptyState = document.getElementById('empty-state');
+
+                if (!counters || counters.length === 0) {
+                    grid.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                grid.style.display = 'grid';
+                emptyState.style.display = 'none';
+
+                grid.innerHTML = counters.map(counter => {
+                    const isServing = counter.current_queue_id > 0;
+                    const statusClass = isServing ? 'serving' : 'available';
+                    const statusText = isServing ? 'Sedang Melayani' : 'Tersedia';
+                    const currentQueue = counter.current_queue ? counter.current_queue.queue_number : '-';
+
+                    return `
+                        <a href="/counter/${counter.id}" class="counter-select-card ${statusClass}">
+                            <div class="counter-number-badge">${counter.counter_number}</div>
+                            <div class="counter-details">
+                                <h3>${counter.counter_name}</h3>
+                                <p class="counter-status-text">${statusText}</p>
+                                ${isServing ? `<p class="current-serving">Antrian: <strong>${currentQueue}</strong></p>` : ''}
+                            </div>
+                            <div class="counter-arrow">&#8594;</div>
+                        </a>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Failed to load counters:', error);
+                document.getElementById('counters-grid').innerHTML = `
+                    <div class="error-state">
+                        <p>Gagal memuat daftar loket. <a href="javascript:loadCounters()">Coba lagi</a></p>
+                    </div>
+                `;
+            }
+        }
+
+        // Initial load
+        loadCounters();
+
+        // Auto refresh every 5 seconds
+        setInterval(loadCounters, 5000);
+    </script>
+</body>
+</html>

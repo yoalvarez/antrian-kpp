@@ -268,11 +268,12 @@ func (d *DB) CallNextQueue(counterID int64, queueType string) (*models.Queue, er
 		}
 	}
 
-	// 3. Find next waiting queue
+	// 3. Find next waiting queue (only from today)
 	var nextQueueID int64
 	query := `
-		SELECT id FROM queues 
-		WHERE status = 'waiting' 
+		SELECT id FROM queues
+		WHERE status = 'waiting'
+		AND DATE(created_at) = DATE('now', 'localtime')
 	`
 	args := []interface{}{}
 	if queueType != "" {
@@ -478,6 +479,7 @@ func (d *DB) GetNextWaitingQueue() (*models.Queue, error) {
 		SELECT id, queue_number, queue_type, status, counter_id, created_at, called_at, completed_at
 		FROM queues
 		WHERE status = 'waiting'
+		AND DATE(created_at) = DATE('now', 'localtime')
 		ORDER BY created_at ASC
 		LIMIT 1
 	`).Scan(&q.ID, &q.QueueNumber, &q.QueueType, &q.Status, &q.CounterID, &q.CreatedAt, &q.CalledAt, &q.CompletedAt)
@@ -494,6 +496,7 @@ func (d *DB) GetNextWaitingQueueByType(queueType string) (*models.Queue, error) 
 		SELECT id, queue_number, queue_type, status, counter_id, created_at, called_at, completed_at
 		FROM queues
 		WHERE status = 'waiting' AND queue_type = ?
+		AND DATE(created_at) = DATE('now', 'localtime')
 		ORDER BY created_at ASC
 		LIMIT 1
 	`, queueType).Scan(&q.ID, &q.QueueNumber, &q.QueueType, &q.Status, &q.CounterID, &q.CreatedAt, &q.CalledAt, &q.CompletedAt)
@@ -509,6 +512,7 @@ func (d *DB) GetWaitingCountByType() (map[string]int, error) {
 		SELECT queue_type, COUNT(*) as count
 		FROM queues
 		WHERE status = 'waiting'
+		AND DATE(created_at) = DATE('now', 'localtime')
 		GROUP BY queue_type
 	`)
 	if err != nil {
@@ -549,7 +553,7 @@ func (d *DB) UpdateQueueStatus(id int64, status models.QueueStatus, counterID *i
 
 func (d *DB) GetWaitingCount() (int, error) {
 	var count int
-	err := d.QueryRow(`SELECT COUNT(*) FROM queues WHERE status = 'waiting'`).Scan(&count)
+	err := d.QueryRow(`SELECT COUNT(*) FROM queues WHERE status = 'waiting' AND DATE(created_at) = DATE('now', 'localtime')`).Scan(&count)
 	return count, err
 }
 
@@ -569,15 +573,17 @@ func (d *DB) CreateCounter(number, name string) (*models.Counter, error) {
 }
 
 func (d *DB) GetCounter(id int64) (*models.Counter, error) {
+	// Join with queues and filter: only show current_queue if it's from today
 	query := `
-		SELECT 
+		SELECT
 			c.id, c.counter_number, c.counter_name, c.is_active, c.current_queue_id, c.last_call_at,
 			q.id, q.queue_number, q.queue_type, q.status, q.counter_id, q.created_at, q.called_at, q.completed_at
 		FROM counters c
 		LEFT JOIN queues q ON c.current_queue_id = q.id
+			AND DATE(q.created_at) = DATE('now', 'localtime')
 		WHERE c.id = ?
 	`
-	
+
 	c := &models.Counter{}
 	var qID, qCounterID sql.NullInt64
 	var qNumber, qType, qStatus sql.NullString
@@ -590,8 +596,9 @@ func (d *DB) GetCounter(id int64) (*models.Counter, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	c.PrepareJSON()
+	// Only set CurrentQueue if it's from today (the JOIN already filters this)
 	if qID.Valid {
 		c.CurrentQueue = &models.Queue{
 			ID:          qID.Int64,
@@ -604,21 +611,26 @@ func (d *DB) GetCounter(id int64) (*models.Counter, error) {
 			CompletedAt: qCompleted,
 		}
 		c.CurrentQueue.PrepareJSON()
+	} else {
+		// Reset current_queue_id in response if queue is not from today
+		c.CurrentQueueID = sql.NullInt64{Valid: false}
 	}
 
 	return c, nil
 }
 
 func (d *DB) ListCounters() ([]*models.Counter, error) {
+	// Join with queues and filter: only show current_queue if it's from today
 	query := `
-		SELECT 
+		SELECT
 			c.id, c.counter_number, c.counter_name, c.is_active, c.current_queue_id, c.last_call_at,
 			q.id, q.queue_number, q.queue_type, q.status, q.counter_id, q.created_at, q.called_at, q.completed_at
 		FROM counters c
 		LEFT JOIN queues q ON c.current_queue_id = q.id
-		ORDER BY c.counter_number
+			AND DATE(q.created_at) = DATE('now', 'localtime')
+		ORDER BY CAST(c.counter_number AS INTEGER) ASC, c.counter_number ASC
 	`
-	
+
 	rows, err := d.Query(query)
 	if err != nil {
 		return nil, err
@@ -639,8 +651,9 @@ func (d *DB) ListCounters() ([]*models.Counter, error) {
 		if err != nil {
 			return nil, err
 		}
-		
+
 		c.PrepareJSON()
+		// Only set CurrentQueue if it's from today (the JOIN already filters this)
 		if qID.Valid {
 			c.CurrentQueue = &models.Queue{
 				ID:          qID.Int64,
@@ -653,6 +666,9 @@ func (d *DB) ListCounters() ([]*models.Counter, error) {
 				CompletedAt: qCompleted,
 			}
 			c.CurrentQueue.PrepareJSON()
+		} else {
+			// Reset current_queue_id in response if queue is not from today
+			c.CurrentQueueID = sql.NullInt64{Valid: false}
 		}
 		counters = append(counters, c)
 	}
@@ -773,6 +789,158 @@ func (d *DB) SetSetting(key, value string) error {
 		ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = datetime('now', 'localtime')
 	`, key, value, value)
 	return err
+}
+
+func (d *DB) GetAllSettings() (map[string]string, error) {
+	rows, err := d.Query(`SELECT key, value FROM settings`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	settings := make(map[string]string)
+	for rows.Next() {
+		var key, value string
+		if err := rows.Scan(&key, &value); err != nil {
+			return nil, err
+		}
+		settings[key] = value
+	}
+	return settings, nil
+}
+
+// Report operations
+
+type ReportData struct {
+	Total       int              `json:"total"`
+	Completed   int              `json:"completed"`
+	Cancelled   int              `json:"cancelled"`
+	AvgWaitTime string           `json:"avg_wait_time"`
+	Daily       []DailyReport    `json:"daily"`
+	ByType      []TypeReport     `json:"by_type"`
+}
+
+type DailyReport struct {
+	Date      string `json:"date"`
+	Total     int    `json:"total"`
+	Completed int    `json:"completed"`
+	Cancelled int    `json:"cancelled"`
+}
+
+type TypeReport struct {
+	Code      string `json:"code"`
+	Name      string `json:"name"`
+	Prefix    string `json:"prefix"`
+	Total     int    `json:"total"`
+	Completed int    `json:"completed"`
+	Cancelled int    `json:"cancelled"`
+}
+
+func (d *DB) GetReport(startDate, endDate string) (*ReportData, error) {
+	report := &ReportData{}
+
+	// Get totals
+	d.QueryRow(`
+		SELECT COUNT(*) FROM queues
+		WHERE DATE(created_at) BETWEEN ? AND ?
+	`, startDate, endDate).Scan(&report.Total)
+
+	d.QueryRow(`
+		SELECT COUNT(*) FROM queues
+		WHERE status = 'completed' AND DATE(created_at) BETWEEN ? AND ?
+	`, startDate, endDate).Scan(&report.Completed)
+
+	d.QueryRow(`
+		SELECT COUNT(*) FROM queues
+		WHERE status = 'cancelled' AND DATE(created_at) BETWEEN ? AND ?
+	`, startDate, endDate).Scan(&report.Cancelled)
+
+	// Get average wait time (from created_at to called_at)
+	var avgMinutes float64
+	err := d.QueryRow(`
+		SELECT COALESCE(AVG((julianday(called_at) - julianday(created_at)) * 24 * 60), 0)
+		FROM queues
+		WHERE called_at IS NOT NULL AND DATE(created_at) BETWEEN ? AND ?
+	`, startDate, endDate).Scan(&avgMinutes)
+	if err == nil && avgMinutes > 0 {
+		mins := int(avgMinutes)
+		if mins < 60 {
+			report.AvgWaitTime = fmt.Sprintf("%d menit", mins)
+		} else {
+			report.AvgWaitTime = fmt.Sprintf("%d jam %d menit", mins/60, mins%60)
+		}
+	} else {
+		report.AvgWaitTime = "-"
+	}
+
+	// Get daily breakdown
+	rows, err := d.Query(`
+		SELECT DATE(created_at) as date,
+			COUNT(*) as total,
+			SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+			SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
+		FROM queues
+		WHERE DATE(created_at) BETWEEN ? AND ?
+		GROUP BY DATE(created_at)
+		ORDER BY DATE(created_at)
+	`, startDate, endDate)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var dr DailyReport
+			rows.Scan(&dr.Date, &dr.Total, &dr.Completed, &dr.Cancelled)
+			report.Daily = append(report.Daily, dr)
+		}
+	}
+
+	// Get by type breakdown
+	rows2, err := d.Query(`
+		SELECT q.queue_type, COALESCE(qt.name, q.queue_type), COALESCE(qt.prefix, q.queue_type),
+			COUNT(*) as total,
+			SUM(CASE WHEN q.status = 'completed' THEN 1 ELSE 0 END) as completed,
+			SUM(CASE WHEN q.status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
+		FROM queues q
+		LEFT JOIN queue_types qt ON q.queue_type = qt.code
+		WHERE DATE(q.created_at) BETWEEN ? AND ?
+		GROUP BY q.queue_type
+		ORDER BY q.queue_type
+	`, startDate, endDate)
+	if err == nil {
+		defer rows2.Close()
+		for rows2.Next() {
+			var tr TypeReport
+			rows2.Scan(&tr.Code, &tr.Name, &tr.Prefix, &tr.Total, &tr.Completed, &tr.Cancelled)
+			report.ByType = append(report.ByType, tr)
+		}
+	}
+
+	return report, nil
+}
+
+func (d *DB) GetQueuesForExport(startDate, endDate string) ([]*models.Queue, error) {
+	rows, err := d.Query(`
+		SELECT id, queue_number, queue_type, status, counter_id,
+			created_at, called_at, completed_at
+		FROM queues
+		WHERE DATE(created_at) BETWEEN ? AND ?
+		ORDER BY created_at
+	`, startDate, endDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var queues []*models.Queue
+	for rows.Next() {
+		q := &models.Queue{}
+		err := rows.Scan(&q.ID, &q.QueueNumber, &q.QueueType, &q.Status, &q.CounterID,
+			&q.CreatedAt, &q.CalledAt, &q.CompletedAt)
+		if err != nil {
+			return nil, err
+		}
+		queues = append(queues, q)
+	}
+	return queues, nil
 }
 
 // Cleanup operations

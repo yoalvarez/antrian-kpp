@@ -9,14 +9,15 @@
 <body class="ticket-body">
     <div class="ticket-container">
         <header class="ticket-header">
-            <h1>Sistem Antrian</h1>
+            <h1 id="page-title">Sistem Antrian</h1>
+            <p id="page-subtitle" class="subtitle" style="font-size: 0.875rem; opacity: 0.9; margin-top: 0.25rem;"></p>
             <div class="datetime" id="datetime"></div>
         </header>
 
         <main class="ticket-main">
             <div class="welcome-section">
-                <h2>Selamat Datang</h2>
-                <p>Silakan pilih jenis layanan untuk mengambil nomor antrian</p>
+                <h2 id="welcome-text">Selamat Datang</h2>
+                <p id="instruction-text">Silakan pilih jenis layanan untuk mengambil nomor antrian</p>
             </div>
 
             <div class="queue-types-grid" id="queue-types">
@@ -54,6 +55,37 @@
     </div>
 
     <script>
+        // Settings
+        let settings = {};
+        let autoPrintEnabled = true;
+
+        // Load settings from server
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                settings = await response.json();
+
+                // Apply settings to UI
+                if (settings.ticket_page_title) {
+                    document.getElementById('page-title').textContent = settings.ticket_page_title;
+                    document.title = settings.ticket_page_title;
+                }
+                if (settings.ticket_page_subtitle) {
+                    document.getElementById('page-subtitle').textContent = settings.ticket_page_subtitle;
+                }
+                if (settings.ticket_welcome_text) {
+                    document.getElementById('welcome-text').textContent = settings.ticket_welcome_text;
+                }
+                if (settings.ticket_instruction_text) {
+                    document.getElementById('instruction-text').textContent = settings.ticket_instruction_text;
+                }
+
+                autoPrintEnabled = settings.ticket_auto_print !== 'false';
+            } catch (error) {
+                console.error('Failed to load settings:', error);
+            }
+        }
+
         // Update date time
         function updateDateTime() {
             const now = new Date();
@@ -68,6 +100,8 @@
             document.getElementById('datetime').textContent = now.toLocaleDateString('id-ID', options);
         }
 
+        // Initialize
+        loadSettings();
         updateDateTime();
         setInterval(updateDateTime, 1000);
 
@@ -82,14 +116,15 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to take queue');
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to take queue');
                 }
 
                 const queue = await response.json();
                 showTicket(queue, typeCode);
             } catch (error) {
                 console.error('Failed to take queue:', error);
-                alert('Gagal mengambil nomor antrian. Silakan coba lagi.');
+                alert(error.message || 'Gagal mengambil nomor antrian. Silakan coba lagi.');
             } finally {
                 btn.disabled = false;
             }
@@ -122,8 +157,10 @@
             // Show modal
             document.getElementById('ticket-modal').classList.add('show');
 
-            // Auto print ticket to thermal printer via backend API
-            printTicket(queue.queue_number, typeName, currentTime);
+            // Auto print ticket to thermal printer via backend API (if enabled)
+            if (autoPrintEnabled) {
+                printTicket(queue.queue_number, typeName, currentTime);
+            }
         }
 
         // Print ticket to thermal printer via backend API (silent print)

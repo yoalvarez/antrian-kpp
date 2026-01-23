@@ -66,6 +66,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/admin", h.handleAdmin)
 	mux.HandleFunc("/display", h.handleDisplay)
 	mux.HandleFunc("/ticket", h.handleTicket)
+	mux.HandleFunc("/counters", h.handleCountersPage)
 	mux.HandleFunc("/counter/", h.handleCounter)
 	mux.HandleFunc("/health", h.handleHealth)
 
@@ -90,6 +91,10 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 
 	// API - Admin
 	mux.HandleFunc("/api/admin/reset-queues", h.handleResetQueues)
+
+	// API - Reports
+	mux.HandleFunc("/api/report", h.handleReport)
+	mux.HandleFunc("/api/report/export", h.handleReportExport)
 
 	// API - Printer
 	mux.HandleFunc("/api/print-ticket", h.handlePrintTicket)
@@ -150,6 +155,10 @@ func (h *Handler) handleTicket(w http.ResponseWriter, r *http.Request) {
 		"QueueTypes": queueTypes,
 	}
 	h.tmpl.ExecuteTemplate(w, "ticket.html", data)
+}
+
+func (h *Handler) handleCountersPage(w http.ResponseWriter, r *http.Request) {
+	h.tmpl.ExecuteTemplate(w, "counters.html", nil)
 }
 
 func (h *Handler) handleCounter(w http.ResponseWriter, r *http.Request) {
@@ -552,22 +561,21 @@ func (h *Handler) handleSettings(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		keysParam := r.URL.Query().Get("keys")
-		var keys []string
-		if keysParam != "" {
-			keys = strings.Split(keysParam, ",")
+
+		// If no keys specified, return all settings
+		if keysParam == "" {
+			allSettings, err := h.db.GetAllSettings()
+			if err != nil {
+				h.jsonError(w, "Failed to get settings", http.StatusInternalServerError)
+				return
+			}
+			h.jsonResponse(w, allSettings)
+			return
 		}
 
+		// Return specific keys
+		keys := strings.Split(keysParam, ",")
 		response := make(map[string]string)
-		
-		// If no keys specified, return common settings or all? 
-		// For now let's return the ones we know about if no specific key requested
-		// or better, just return what is asked.
-		
-		if len(keys) == 0 {
-		    // Default set of settings to return if none specified
-            keys = []string{"display_video_url", "display_running_text"}
-		}
-
 		for _, key := range keys {
 			val, _ := h.db.GetSetting(key)
 			response[key] = val
@@ -871,4 +879,73 @@ func (h *Handler) handlePrinterStatus(w http.ResponseWriter, r *http.Request) {
 		"enabled":      h.printer.IsEnabled(),
 		"printer_name": h.printer.GetPrinterName(),
 	})
+}
+
+// Report handlers
+
+func (h *Handler) handleReport(w http.ResponseWriter, r *http.Request) {
+	startDate := r.URL.Query().Get("start")
+	endDate := r.URL.Query().Get("end")
+
+	if startDate == "" || endDate == "" {
+		h.jsonError(w, "start and end date required", http.StatusBadRequest)
+		return
+	}
+
+	report, err := h.db.GetReport(startDate, endDate)
+	if err != nil {
+		h.jsonError(w, "Failed to get report", http.StatusInternalServerError)
+		return
+	}
+
+	h.jsonResponse(w, report)
+}
+
+func (h *Handler) handleReportExport(w http.ResponseWriter, r *http.Request) {
+	startDate := r.URL.Query().Get("start")
+	endDate := r.URL.Query().Get("end")
+
+	if startDate == "" || endDate == "" {
+		h.jsonError(w, "start and end date required", http.StatusBadRequest)
+		return
+	}
+
+	queues, err := h.db.GetQueuesForExport(startDate, endDate)
+	if err != nil {
+		h.jsonError(w, "Failed to get queues", http.StatusInternalServerError)
+		return
+	}
+
+	// Generate CSV
+	w.Header().Set("Content-Type", "text/csv")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=report-%s-%s.csv", startDate, endDate))
+
+	// Write CSV header
+	w.Write([]byte("No Antrian,Jenis,Status,Waktu Ambil,Waktu Panggil,Waktu Selesai,Loket\n"))
+
+	for _, q := range queues {
+		calledAt := ""
+		if q.CalledAt.Valid {
+			calledAt = q.CalledAt.Time.Format("2006-01-02 15:04:05")
+		}
+		completedAt := ""
+		if q.CompletedAt.Valid {
+			completedAt = q.CompletedAt.Time.Format("2006-01-02 15:04:05")
+		}
+		counterName := ""
+		if q.CounterID.Valid {
+			counterName = fmt.Sprintf("Loket %d", q.CounterID.Int64)
+		}
+
+		line := fmt.Sprintf("%s,%s,%s,%s,%s,%s,%s\n",
+			q.QueueNumber,
+			q.QueueType,
+			q.Status,
+			q.CreatedAt.Format("2006-01-02 15:04:05"),
+			calledAt,
+			completedAt,
+			counterName,
+		)
+		w.Write([]byte(line))
+	}
 }

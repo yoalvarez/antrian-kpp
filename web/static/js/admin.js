@@ -756,3 +756,329 @@ async function testPrintTicket() {
         alert('Gagal test print: ' + error.message);
     }
 }
+
+// ===================================
+// Ticket Appearance Settings
+// ===================================
+
+async function loadTicketAppearanceSettings() {
+    try {
+        const response = await fetch('/api/settings');
+        const settings = await response.json();
+
+        if (settings.ticket_page_title) document.getElementById('ticket-page-title').value = settings.ticket_page_title;
+        if (settings.ticket_page_subtitle) document.getElementById('ticket-page-subtitle').value = settings.ticket_page_subtitle;
+        if (settings.ticket_welcome_text) document.getElementById('ticket-welcome-text').value = settings.ticket_welcome_text;
+        if (settings.ticket_instruction_text) document.getElementById('ticket-instruction-text').value = settings.ticket_instruction_text;
+
+        document.getElementById('ticket-auto-print').checked = settings.ticket_auto_print !== 'false';
+        document.getElementById('ticket-show-queue-count').checked = settings.ticket_show_queue_count !== 'false';
+    } catch (error) {
+        console.error('Failed to load ticket appearance settings:', error);
+    }
+}
+
+async function saveTicketAppearance(event) {
+    event.preventDefault();
+
+    const settings = {
+        ticket_page_title: document.getElementById('ticket-page-title').value,
+        ticket_page_subtitle: document.getElementById('ticket-page-subtitle').value,
+        ticket_welcome_text: document.getElementById('ticket-welcome-text').value,
+        ticket_instruction_text: document.getElementById('ticket-instruction-text').value,
+        ticket_auto_print: document.getElementById('ticket-auto-print').checked.toString(),
+        ticket_show_queue_count: document.getElementById('ticket-show-queue-count').checked.toString()
+    };
+
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+
+        if (!response.ok) throw new Error('Failed to save');
+        alert('Pengaturan halaman antrian berhasil disimpan!');
+    } catch (error) {
+        console.error('Failed to save ticket appearance:', error);
+        alert('Gagal menyimpan pengaturan.');
+    }
+}
+
+// ===================================
+// Display Appearance Settings
+// ===================================
+
+async function loadDisplayAppearanceSettings() {
+    try {
+        const response = await fetch('/api/settings');
+        const settings = await response.json();
+
+        if (settings.display_title) document.getElementById('display-title').value = settings.display_title;
+        if (settings.display_logo_text) document.getElementById('display-logo-text').value = settings.display_logo_text;
+        if (settings.display_recent_calls_count) document.getElementById('display-recent-calls-count').value = settings.display_recent_calls_count;
+        if (settings.display_history_count) document.getElementById('display-history-count').value = settings.display_history_count;
+        if (settings.display_tts_rate) {
+            document.getElementById('display-tts-rate').value = settings.display_tts_rate;
+            document.getElementById('tts-rate-value').textContent = settings.display_tts_rate;
+        }
+        if (settings.display_ticker_speed) {
+            document.getElementById('display-ticker-speed').value = settings.display_ticker_speed;
+            document.getElementById('ticker-speed-value').textContent = settings.display_ticker_speed;
+        }
+
+        document.getElementById('display-show-video').checked = settings.display_show_video !== 'false';
+        document.getElementById('display-show-stats').checked = settings.display_show_stats !== 'false';
+        document.getElementById('display-show-history').checked = settings.display_show_history !== 'false';
+        document.getElementById('display-show-queue-summary').checked = settings.display_show_queue_summary !== 'false';
+        document.getElementById('display-sound-enabled').checked = settings.display_sound_enabled !== 'false';
+    } catch (error) {
+        console.error('Failed to load display appearance settings:', error);
+    }
+}
+
+async function saveDisplayAppearance(event) {
+    event.preventDefault();
+
+    const settings = {
+        display_title: document.getElementById('display-title').value,
+        display_logo_text: document.getElementById('display-logo-text').value,
+        display_recent_calls_count: document.getElementById('display-recent-calls-count').value,
+        display_history_count: document.getElementById('display-history-count').value,
+        display_tts_rate: document.getElementById('display-tts-rate').value,
+        display_ticker_speed: document.getElementById('display-ticker-speed').value,
+        display_show_video: document.getElementById('display-show-video').checked.toString(),
+        display_show_stats: document.getElementById('display-show-stats').checked.toString(),
+        display_show_history: document.getElementById('display-show-history').checked.toString(),
+        display_show_queue_summary: document.getElementById('display-show-queue-summary').checked.toString(),
+        display_sound_enabled: document.getElementById('display-sound-enabled').checked.toString()
+    };
+
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+
+        if (!response.ok) throw new Error('Failed to save');
+        alert('Pengaturan display berhasil disimpan!');
+    } catch (error) {
+        console.error('Failed to save display appearance:', error);
+        alert('Gagal menyimpan pengaturan.');
+    }
+}
+
+// Setup range input listeners
+function setupRangeInputs() {
+    const ttsRate = document.getElementById('display-tts-rate');
+    const tickerSpeed = document.getElementById('display-ticker-speed');
+
+    if (ttsRate) {
+        ttsRate.addEventListener('input', function() {
+            document.getElementById('tts-rate-value').textContent = this.value;
+        });
+    }
+
+    if (tickerSpeed) {
+        tickerSpeed.addEventListener('input', function() {
+            document.getElementById('ticker-speed-value').textContent = this.value;
+        });
+    }
+}
+
+// ===================================
+// System Settings
+// ===================================
+
+async function loadSystemSettings() {
+    try {
+        const response = await fetch('/api/settings');
+        const settings = await response.json();
+
+        if (settings.system_open_time) document.getElementById('system-open-time').value = settings.system_open_time;
+        if (settings.system_close_time) document.getElementById('system-close-time').value = settings.system_close_time;
+        if (settings.system_max_queue_daily) document.getElementById('system-max-queue-daily').value = settings.system_max_queue_daily;
+        if (settings.system_max_queue_per_type) document.getElementById('system-max-queue-per-type').value = settings.system_max_queue_per_type;
+
+        // Operating days
+        const days = settings.system_operating_days ? settings.system_operating_days.split(',') : ['mon','tue','wed','thu','fri'];
+        document.getElementById('day-mon').checked = days.includes('mon');
+        document.getElementById('day-tue').checked = days.includes('tue');
+        document.getElementById('day-wed').checked = days.includes('wed');
+        document.getElementById('day-thu').checked = days.includes('thu');
+        document.getElementById('day-fri').checked = days.includes('fri');
+        document.getElementById('day-sat').checked = days.includes('sat');
+        document.getElementById('day-sun').checked = days.includes('sun');
+
+        document.getElementById('system-enforce-hours').checked = settings.system_enforce_hours !== 'false';
+    } catch (error) {
+        console.error('Failed to load system settings:', error);
+    }
+}
+
+async function saveSystemSettings(event) {
+    event.preventDefault();
+
+    const days = [];
+    if (document.getElementById('day-mon').checked) days.push('mon');
+    if (document.getElementById('day-tue').checked) days.push('tue');
+    if (document.getElementById('day-wed').checked) days.push('wed');
+    if (document.getElementById('day-thu').checked) days.push('thu');
+    if (document.getElementById('day-fri').checked) days.push('fri');
+    if (document.getElementById('day-sat').checked) days.push('sat');
+    if (document.getElementById('day-sun').checked) days.push('sun');
+
+    const settings = {
+        system_open_time: document.getElementById('system-open-time').value,
+        system_close_time: document.getElementById('system-close-time').value,
+        system_operating_days: days.join(','),
+        system_max_queue_daily: document.getElementById('system-max-queue-daily').value,
+        system_max_queue_per_type: document.getElementById('system-max-queue-per-type').value,
+        system_enforce_hours: document.getElementById('system-enforce-hours').checked.toString()
+    };
+
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+
+        if (!response.ok) throw new Error('Failed to save');
+        alert('Pengaturan sistem berhasil disimpan!');
+    } catch (error) {
+        console.error('Failed to save system settings:', error);
+        alert('Gagal menyimpan pengaturan.');
+    }
+}
+
+// ===================================
+// Reports & Statistics
+// ===================================
+
+function initReportDates() {
+    const today = new Date();
+    const lastWeek = new Date(today);
+    lastWeek.setDate(lastWeek.getDate() - 7);
+
+    document.getElementById('report-end-date').value = today.toISOString().split('T')[0];
+    document.getElementById('report-start-date').value = lastWeek.toISOString().split('T')[0];
+}
+
+async function loadReport() {
+    const startDate = document.getElementById('report-start-date').value;
+    const endDate = document.getElementById('report-end-date').value;
+
+    if (!startDate || !endDate) {
+        alert('Silakan pilih rentang tanggal.');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/report?start=${startDate}&end=${endDate}`);
+        const report = await response.json();
+
+        // Update summary cards
+        document.getElementById('report-total').textContent = report.total || 0;
+        document.getElementById('report-completed').textContent = report.completed || 0;
+        document.getElementById('report-cancelled').textContent = report.cancelled || 0;
+        document.getElementById('report-avg-time').textContent = report.avg_wait_time || '-';
+
+        // Render chart
+        renderReportChart(report.daily || []);
+
+        // Render by type
+        renderReportByType(report.by_type || []);
+    } catch (error) {
+        console.error('Failed to load report:', error);
+        alert('Gagal memuat laporan.');
+    }
+}
+
+function renderReportChart(dailyData) {
+    const container = document.getElementById('report-chart');
+
+    if (!dailyData || dailyData.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 2rem;">Tidak ada data untuk rentang tanggal ini</p>';
+        return;
+    }
+
+    const maxValue = Math.max(...dailyData.map(d => d.total)) || 1;
+    const chartHeight = 150;
+
+    container.innerHTML = dailyData.map(day => {
+        const height = (day.total / maxValue) * chartHeight;
+        const date = new Date(day.date);
+        const dayName = date.toLocaleDateString('id-ID', { weekday: 'short' });
+        const dayNum = date.getDate();
+
+        return `
+            <div class="chart-bar-container">
+                <div class="chart-value">${day.total}</div>
+                <div class="chart-bar" style="height: ${height}px;" title="${day.total} antrian"></div>
+                <div class="chart-label">${dayName} ${dayNum}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderReportByType(byTypeData) {
+    const container = document.getElementById('report-by-type');
+
+    if (!byTypeData || byTypeData.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = byTypeData.map(type => `
+        <div class="type-report-card">
+            <h5>${type.prefix} - ${type.name}</h5>
+            <div class="stats">
+                <span>Total: <span class="count">${type.total}</span></span>
+                <span>Selesai: <span class="count">${type.completed}</span></span>
+                <span>Batal: <span class="count">${type.cancelled}</span></span>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function exportReport() {
+    const startDate = document.getElementById('report-start-date').value;
+    const endDate = document.getElementById('report-end-date').value;
+
+    if (!startDate || !endDate) {
+        alert('Silakan pilih rentang tanggal terlebih dahulu.');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/report/export?start=${startDate}&end=${endDate}`);
+        const blob = await response.blob();
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `laporan-antrian-${startDate}-${endDate}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+    } catch (error) {
+        console.error('Failed to export report:', error);
+        alert('Gagal export laporan.');
+    }
+}
+
+// ===================================
+// Load All Settings on Page Load
+// ===================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Load all additional settings
+    loadTicketAppearanceSettings();
+    loadDisplayAppearanceSettings();
+    loadSystemSettings();
+    setupRangeInputs();
+    initReportDates();
+});

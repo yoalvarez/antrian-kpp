@@ -1,0 +1,331 @@
+/* Counters Selection Page - Clean & Professional */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+
+:root {
+    --bg-primary: #fafafa;
+    --bg-secondary: #ffffff;
+    --bg-accent: #f5f5f5;
+    --text-primary: #18181b;
+    --text-secondary: #71717a;
+    --text-muted: #a1a1aa;
+    --accent: #0ea5e9;
+    --accent-hover: #0284c7;
+    --accent-soft: #e0f2fe;
+    --success: #22c55e;
+    --success-soft: #dcfce7;
+    --warning: #f59e0b;
+    --warning-soft: #fef3c7;
+    --danger: #ef4444;
+    --danger-soft: #fee2e2;
+    --border: #e4e4e7;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.05);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.08);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.counters-body {
+    background: var(--bg-primary);
+    min-height: 100vh;
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.counters-container {
+    max-width: 800px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-secondary);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Header */
+.counters-header {
+    padding: 2rem 1.5rem;
+    text-align: center;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+}
+
+.counters-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--accent);
+}
+
+.counters-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+
+.counters-header .subtitle {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+.counters-header .datetime {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    margin-top: 1rem;
+    font-weight: 500;
+}
+
+/* Main content */
+.counters-main {
+    flex: 1;
+    padding: 2rem 1.5rem;
+}
+
+/* Counters grid */
+.counters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+/* Counter select card */
+.counter-select-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border);
+    border-radius: 1rem;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.counter-select-card:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.counter-select-card.available {
+    border-left: 4px solid var(--success);
+}
+
+.counter-select-card.serving {
+    border-left: 4px solid var(--warning);
+}
+
+.counter-number-badge {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent);
+    color: white;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    border-radius: 0.75rem;
+    flex-shrink: 0;
+}
+
+.counter-select-card.serving .counter-number-badge {
+    background: var(--warning);
+}
+
+.counter-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.counter-details h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.counter-status-text {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.counter-select-card.available .counter-status-text {
+    color: var(--success);
+}
+
+.counter-select-card.serving .counter-status-text {
+    color: var(--warning);
+}
+
+.current-serving {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin-top: 0.375rem;
+}
+
+.current-serving strong {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-primary);
+}
+
+.counter-arrow {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.counter-select-card:hover .counter-arrow {
+    transform: translateX(4px);
+    color: var(--accent);
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    font-size: 0.9375rem;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+}
+
+/* Error state */
+.error-state {
+    text-align: center;
+    padding: 2rem;
+    background: var(--danger-soft);
+    border-radius: 0.75rem;
+    grid-column: 1 / -1;
+}
+
+.error-state p {
+    color: var(--danger);
+    font-size: 0.9375rem;
+}
+
+.error-state a {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+/* Button */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--accent-hover);
+}
+
+/* Footer */
+.counters-footer {
+    padding: 1.5rem;
+    text-align: center;
+    border-top: 1px solid var(--border);
+    font-size: 0.875rem;
+}
+
+.counters-footer a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.counters-footer a:hover {
+    color: var(--accent-hover);
+}
+
+.counters-footer .separator {
+    color: var(--border);
+    margin: 0 1rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .counters-container {
+        box-shadow: none;
+    }
+
+    .counters-header {
+        padding: 1.5rem 1rem;
+    }
+
+    .counters-header h1 {
+        font-size: 1.25rem;
+    }
+
+    .counters-main {
+        padding: 1.5rem 1rem;
+    }
+
+    .counters-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .counter-select-card {
+        padding: 1rem;
+    }
+
+    .counter-number-badge {
+        width: 48px;
+        height: 48px;
+        font-size: 1.25rem;
+    }
+
+    .counter-details h3 {
+        font-size: 1rem;
+    }
+
+    .counters-footer .separator {
+        margin: 0 0.5rem;
+    }
+}
