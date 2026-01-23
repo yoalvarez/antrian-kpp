@@ -457,14 +457,49 @@
             <form id="add-counter-form" onsubmit="addCounter(event)">
                 <div class="form-group">
                     <label for="counter-number">Nomor Loket</label>
-                    <input type="text" id="counter-number" required placeholder="1">
+                    <input type="text" id="counter-number" required placeholder="Contoh: 1, 2, 3" oninput="autoGenerateCounterName()">
+                    <small>Nomor urut loket (akan ditampilkan di display)</small>
                 </div>
                 <div class="form-group">
-                    <label for="counter-name">Nama Loket</label>
-                    <input type="text" id="counter-name" required placeholder="Loket 1">
+                    <label for="counter-name">Nama Tampilan <span style="color: #6b7280; font-weight: normal;">(opsional)</span></label>
+                    <input type="text" id="counter-name" placeholder="Otomatis: Loket 1">
+                    <small>Kosongkan untuk menggunakan nama otomatis "Loket [nomor]"</small>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn" onclick="closeModal('add-counter-modal')">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Counter Modal -->
+    <div class="modal" id="edit-counter-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Loket</h3>
+                <button class="modal-close" onclick="closeModal('edit-counter-modal')">&times;</button>
+            </div>
+            <form id="edit-counter-form" onsubmit="updateCounter(event)">
+                <input type="hidden" id="edit-counter-id">
+                <div class="form-group">
+                    <label for="edit-counter-number">Nomor Loket</label>
+                    <input type="text" id="edit-counter-number" disabled class="form-control-disabled">
+                    <small>Nomor loket tidak dapat diubah</small>
+                </div>
+                <div class="form-group">
+                    <label for="edit-counter-name">Nama Tampilan</label>
+                    <input type="text" id="edit-counter-name" required placeholder="Loket 1">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="edit-counter-active"> Loket Aktif
+                    </label>
+                    <small>Nonaktifkan jika loket sedang tidak beroperasi</small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-danger" onclick="confirmDeleteCounter()">Hapus</button>
+                    <button type="button" class="btn" onclick="closeModal('edit-counter-modal')">Batal</button>
                     <button type="submit" class="btn btn-primary">Simpan</button>
                 </div>
             </form>

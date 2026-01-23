@@ -104,26 +104,31 @@ async function loadQueueTypes() {
     }
 }
 
-// Check if a date string is from today
-function isToday(dateStr) {
-    if (!dateStr) return false;
-    const date = new Date(dateStr);
-    const today = new Date();
-    return date.getFullYear() === today.getFullYear() &&
-           date.getMonth() === today.getMonth() &&
-           date.getDate() === today.getDate();
-}
-
-// Get current queue display (only show if from today)
+// Get current queue display
 function getCurrentQueueDisplay(counter) {
-    if (!counter.current_queue) return '';
-
-    // Check if the queue is from today (using called_at or created_at)
-    const queueDate = counter.current_queue.called_at || counter.current_queue.created_at;
-    if (!isToday(queueDate)) return '';
-
+    if (!counter.current_queue || !counter.current_queue.queue_number) return '';
     return `<p style="color: #2563eb;">Antrian: ${counter.current_queue.queue_number}</p>`;
 }
+
+// Auto-generate counter name based on number
+function autoGenerateCounterName() {
+    const numberInput = document.getElementById('counter-number');
+    const nameInput = document.getElementById('counter-name');
+
+    if (numberInput.value && !nameInput.dataset.userEdited) {
+        nameInput.placeholder = `Otomatis: Loket ${numberInput.value}`;
+    }
+}
+
+// Mark name input as user-edited when user types
+document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.getElementById('counter-name');
+    if (nameInput) {
+        nameInput.addEventListener('input', function() {
+            this.dataset.userEdited = this.value ? 'true' : '';
+        });
+    }
+});
 
 // Load counters
 async function loadCounters() {
@@ -145,29 +150,51 @@ async function loadCounters() {
             return numA - numB;
         });
 
-        container.innerHTML = counters.map(counter => `
-            <div class="counter-card">
-                <div class="counter-info">
-                    <h3>${counter.counter_name}</h3>
-                    <p>Loket ${counter.counter_number}</p>
-                    ${getCurrentQueueDisplay(counter)}
+        container.innerHTML = counters.map(counter => {
+            const hasQueue = counter.current_queue && counter.current_queue.queue_number;
+
+            return `
+                <div class="counter-card ${hasQueue ? 'has-queue' : ''} ${!counter.is_active ? 'inactive-counter' : ''}" data-counter-id="${counter.id}">
+                    <div class="counter-card-header">
+                        <div class="counter-info">
+                            <div class="counter-number-badge">${counter.counter_number}</div>
+                            <div class="counter-details">
+                                <h3>${counter.counter_name}</h3>
+                                <span class="counter-status-badge ${counter.is_active ? 'active' : 'inactive'}">
+                                    ${counter.is_active ? 'Aktif' : 'Nonaktif'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="counter-icon-actions">
+                            <button class="icon-btn" onclick="showEditCounterModal(${counter.id})" title="Edit Loket">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </button>
+                            <button class="icon-btn icon-btn-danger" onclick="deleteCounter(${counter.id}, '${counter.counter_name}')" title="Hapus Loket">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="counter-card-body">
+                        ${hasQueue
+                            ? `<div class="queue-serving">
+                                <span class="label">Melayani</span>
+                                <span class="queue-number">${counter.current_queue.queue_number}</span>
+                               </div>`
+                            : `<div class="queue-empty">Tidak ada antrian</div>`
+                        }
+                    </div>
+                    <div class="counter-card-footer">
+                        <a href="/counter/${counter.id}" class="btn btn-sm btn-primary btn-block">Buka Loket</a>
+                    </div>
                 </div>
-                <div class="counter-actions">
-                    <span class="counter-status ${counter.is_active ? 'active' : 'inactive'}">
-                        ${counter.is_active ? 'Aktif' : 'Tidak Aktif'}
-                    </span>
-                    <a href="/counter/${counter.id}" class="btn btn-sm" style="margin-left: 0.5rem;">Buka</a>
-                    <button class="btn btn-sm btn-danger btn-icon" onclick="deleteCounter(${counter.id}, '${counter.counter_name}')" style="margin-left: 0.5rem;" title="Hapus Loket">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     } catch (error) {
         console.error('Failed to load counters:', error);
     }
@@ -417,6 +444,10 @@ function showAddCounterModal() {
 }
 
 // Close modal
+function showModal(modalId) {
+    document.getElementById(modalId).classList.add('show');
+}
+
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('show');
     const form = document.querySelector(`#${modalId} form`);
@@ -427,8 +458,13 @@ function closeModal(modalId) {
 async function addCounter(event) {
     event.preventDefault();
 
-    const counterNumber = document.getElementById('counter-number').value;
-    const counterName = document.getElementById('counter-name').value;
+    const counterNumber = document.getElementById('counter-number').value.trim();
+    let counterName = document.getElementById('counter-name').value.trim();
+
+    // Auto-generate name if empty
+    if (!counterName) {
+        counterName = `Loket ${counterNumber}`;
+    }
 
     try {
         const response = await fetch('/api/counters', {
@@ -447,6 +483,7 @@ async function addCounter(event) {
         }
 
         closeModal('add-counter-modal');
+        document.getElementById('add-counter-form').reset();
         loadCounters();
         loadStats();
     } catch (error) {
@@ -456,11 +493,77 @@ async function addCounter(event) {
 }
 
 // Delete counter
-async function deleteCounter(id, name) {
-    if (!confirm(`Yakin ingin menghapus loket "${name}"?\n\nPerhatian: Riwayat panggilan di loket ini juga akan dihapus.`)) {
+// Show edit counter modal
+async function showEditCounterModal(id) {
+    try {
+        const response = await fetch(`/api/counter/${id}`);
+        if (!response.ok) throw new Error('Failed to fetch counter');
+
+        const counter = await response.json();
+
+        document.getElementById('edit-counter-id').value = counter.id;
+        document.getElementById('edit-counter-number').value = counter.counter_number;
+        document.getElementById('edit-counter-name').value = counter.counter_name;
+        document.getElementById('edit-counter-active').checked = counter.is_active;
+
+        showModal('edit-counter-modal');
+    } catch (error) {
+        console.error('Failed to load counter:', error);
+        alert('Gagal memuat data loket.');
+    }
+}
+
+// Update counter
+async function updateCounter(event) {
+    event.preventDefault();
+
+    const id = document.getElementById('edit-counter-id').value;
+    const counterName = document.getElementById('edit-counter-name').value.trim();
+    const isActive = document.getElementById('edit-counter-active').checked;
+
+    if (!counterName) {
+        alert('Nama loket tidak boleh kosong.');
         return;
     }
 
+    try {
+        const response = await fetch(`/api/counter/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                counter_name: counterName,
+                is_active: isActive
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update counter');
+        }
+
+        closeModal('edit-counter-modal');
+        loadCounters();
+        loadStats();
+    } catch (error) {
+        console.error('Failed to update counter:', error);
+        alert('Gagal memperbarui loket.');
+    }
+}
+
+// Confirm delete from edit modal
+function confirmDeleteCounter() {
+    const id = document.getElementById('edit-counter-id').value;
+    const name = document.getElementById('edit-counter-name').value;
+
+    if (confirm(`Yakin ingin menghapus loket "${name}"?\n\nPerhatian: Riwayat panggilan di loket ini juga akan dihapus.`)) {
+        closeModal('edit-counter-modal');
+        deleteCounterById(id);
+    }
+}
+
+// Delete counter by ID
+async function deleteCounterById(id) {
     try {
         const response = await fetch(`/api/counter/${id}`, {
             method: 'DELETE'
@@ -477,6 +580,15 @@ async function deleteCounter(id, name) {
         console.error('Failed to delete counter:', error);
         alert('Gagal menghapus loket.');
     }
+}
+
+// Delete counter (from card button)
+async function deleteCounter(id, name) {
+    if (!confirm(`Yakin ingin menghapus loket "${name}"?\n\nPerhatian: Riwayat panggilan di loket ini juga akan dihapus.`)) {
+        return;
+    }
+
+    await deleteCounterById(id);
 }
 
 // Close modal on escape key

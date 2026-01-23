@@ -80,11 +80,8 @@ function updateCounterUI(counter) {
     const btnComplete = document.getElementById('btn-complete');
     const btnCancel = document.getElementById('btn-cancel');
 
-    // Check if current_queue exists and is from today
-    const queueDate = counter.current_queue?.called_at || counter.current_queue?.created_at;
-    const hasValidQueue = counter.current_queue && isToday(queueDate);
-
-    if (hasValidQueue) {
+    // Check if current_queue exists (backend already handles the logic)
+    if (counter.current_queue && counter.current_queue.queue_number) {
         hasCurrentQueue = true;
         currentQueue.textContent = counter.current_queue.queue_number;
         queueStatus.textContent = 'Sedang Dilayani';

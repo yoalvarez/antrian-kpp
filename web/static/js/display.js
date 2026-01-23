@@ -121,19 +121,21 @@ async function loadCounters() {
     }
 }
 
-// Load currently called queues to initialize counter status
+// Load currently called queues to initialize counter status (only today's queues)
 async function loadCalledQueues() {
     try {
-        const response = await fetch("/api/queues?status=called&limit=50");
+        // Get today's date in YYYY-MM-DD format
+        const today = new Date().toISOString().split('T')[0];
+        const response = await fetch(`/api/queues?status=called&date=${today}&limit=50`);
         const result = await response.json();
         const queues = result.queues || [];
 
         // Reset counter status
         counterStatus = {};
 
-        // Map called queues to their counters (only if from today)
+        // Map called queues to their counters
         queues.forEach(q => {
-            if (q.counter_id && isToday(q.called_at || q.created_at)) {
+            if (q.counter_id) {
                 counterStatus[q.counter_id] = {
                     queue_number: q.queue_number,
                     queue_type: q.queue_type,
@@ -177,11 +179,10 @@ function renderCounterGrid() {
 
     container.innerHTML = countersCache.map(counter => {
         const status = counterStatus[counter.id];
-        // Only show status if from today
-        const isTodayStatus = status && isToday(status.called_at);
-        const statusClass = isTodayStatus ? 'active' : 'idle';
-        const queueNumber = isTodayStatus ? status.queue_number : '---';
-        const statusText = isTodayStatus ? 'Melayani' : 'Tidak Aktif';
+        const hasStatus = status && status.queue_number;
+        const statusClass = hasStatus ? 'active' : 'idle';
+        const queueNumber = hasStatus ? status.queue_number : '---';
+        const statusText = hasStatus ? 'Melayani' : 'Tidak Aktif';
 
         return `
             <div class="counter-card ${statusClass}" data-counter-id="${counter.id}">
@@ -203,13 +204,12 @@ function updateCounterGridStatus() {
         const numberEl = card.querySelector('.counter-number');
         const statusEl = card.querySelector('.counter-status');
 
-        // Only show status if from today
-        const isTodayStatus = status && isToday(status.called_at);
+        const hasStatus = status && status.queue_number;
 
         // Update classes
         card.classList.remove('active', 'calling', 'idle');
 
-        if (isTodayStatus) {
+        if (hasStatus) {
             card.classList.add('active');
             numberEl.textContent = status.queue_number;
             statusEl.textContent = 'Melayani';
@@ -819,7 +819,7 @@ function formatQueueNumberForSpeech(queueNumber) {
         'U': 'U',
         'V': 'V',
         'W': 'W',
-        'X': 'EKS',
+        'X': 'X',
         'Y': 'Y',
         'Z': 'Z'
     };
@@ -836,32 +836,32 @@ function formatCounterNameForSpeech(counterName) {
 
     // Map letters to clearer Indonesian pronunciation
     const letterMap = {
-        'A': 'AA',
-        'B': 'BE',
-        'C': 'CE',
-        'D': 'DE',
-        'E': 'EE',
-        'F': 'EF',
-        'G': 'GE',
-        'H': 'HA',
-        'I': 'II',
-        'J': 'JE',
-        'K': 'KA',
-        'L': 'EL',
-        'M': 'EM',
-        'N': 'EN',
-        'O': 'OO',
-        'P': 'PE',
-        'Q': 'KI',
-        'R': 'ER',
-        'S': 'ES',
-        'T': 'TE',
-        'U': 'UU',
-        'V': 'VE',
-        'W': 'WE',
-        'X': 'EKS',
-        'Y': 'YE',
-        'Z': 'ZET'
+         'A': 'A',
+        'B': 'B',
+        'C': 'C',
+        'D': 'D',
+        'E': 'E',
+        'F': 'F',
+        'G': 'G',
+        'H': 'H',
+        'I': 'I',
+        'J': 'J',
+        'K': 'K',
+        'L': 'L',
+        'M': 'M',
+        'N': 'N',
+        'O': 'O',
+        'P': 'P',
+        'Q': 'Q',
+        'R': 'R',
+        'S': 'S',
+        'T': 'T',
+        'U': 'U',
+        'V': 'V',
+        'W': 'W',
+        'X': 'X',
+        'Y': 'Y',
+        'Z': 'Z'
     };
 
     // Replace standalone letters and numbers in counter name

@@ -346,6 +346,50 @@ func (h *Handler) handleCounterAPI(w http.ResponseWriter, r *http.Request) {
 			}
 			h.jsonResponse(w, counter)
 
+		case http.MethodPut:
+			// Update counter
+			var req struct {
+				CounterName string `json:"counter_name"`
+				IsActive    *bool  `json:"is_active,omitempty"`
+			}
+
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				h.jsonError(w, "Invalid request body", http.StatusBadRequest)
+				return
+			}
+
+			// Get current counter to preserve is_active if not provided
+			currentCounter, err := h.db.GetCounter(counterID)
+			if err != nil {
+				if err == sql.ErrNoRows {
+					h.jsonError(w, "Counter not found", http.StatusNotFound)
+					return
+				}
+				h.jsonError(w, "Database error", http.StatusInternalServerError)
+				return
+			}
+
+			isActive := currentCounter.IsActive
+			if req.IsActive != nil {
+				isActive = *req.IsActive
+			}
+
+			if err := h.db.UpdateCounter(counterID, req.CounterName, isActive); err != nil {
+				log.Printf("Failed to update counter: %v", err)
+				h.jsonError(w, "Failed to update counter", http.StatusInternalServerError)
+				return
+			}
+
+			// Get updated counter
+			counter, err := h.db.GetCounter(counterID)
+			if err != nil {
+				h.jsonError(w, "Failed to get updated counter", http.StatusInternalServerError)
+				return
+			}
+
+			log.Printf("Counter updated: %s", counter.CounterName)
+			h.jsonResponse(w, counter)
+
 		case http.MethodDelete:
 			// Delete counter
 			counter, err := h.db.GetCounter(counterID)

@@ -573,14 +573,17 @@ func (d *DB) CreateCounter(number, name string) (*models.Counter, error) {
 }
 
 func (d *DB) GetCounter(id int64) (*models.Counter, error) {
-	// Join with queues and filter: only show current_queue if it's from today
+	// Get today's date from Go (more reliable than SQLite's localtime)
+	today := time.Now().Format("2006-01-02")
+
+	// Join with queues and filter: only show current_queue if it was CALLED today
 	query := `
 		SELECT
 			c.id, c.counter_number, c.counter_name, c.is_active, c.current_queue_id, c.last_call_at,
 			q.id, q.queue_number, q.queue_type, q.status, q.counter_id, q.created_at, q.called_at, q.completed_at
 		FROM counters c
 		LEFT JOIN queues q ON c.current_queue_id = q.id
-			AND DATE(q.created_at) = DATE('now', 'localtime')
+			AND DATE(q.called_at) = ?
 		WHERE c.id = ?
 	`
 
@@ -589,7 +592,7 @@ func (d *DB) GetCounter(id int64) (*models.Counter, error) {
 	var qNumber, qType, qStatus sql.NullString
 	var qCreated, qCalled, qCompleted sql.NullTime
 
-	err := d.QueryRow(query, id).Scan(
+	err := d.QueryRow(query, today, id).Scan(
 		&c.ID, &c.CounterNumber, &c.CounterName, &c.IsActive, &c.CurrentQueueID, &c.LastCallAt,
 		&qID, &qNumber, &qType, &qStatus, &qCounterID, &qCreated, &qCalled, &qCompleted,
 	)
@@ -598,7 +601,7 @@ func (d *DB) GetCounter(id int64) (*models.Counter, error) {
 	}
 
 	c.PrepareJSON()
-	// Only set CurrentQueue if it's from today (the JOIN already filters this)
+	// Only set CurrentQueue if it was called today (the JOIN already filters this)
 	if qID.Valid {
 		c.CurrentQueue = &models.Queue{
 			ID:          qID.Int64,
@@ -612,7 +615,7 @@ func (d *DB) GetCounter(id int64) (*models.Counter, error) {
 		}
 		c.CurrentQueue.PrepareJSON()
 	} else {
-		// Reset current_queue_id in response if queue is not from today
+		// Reset current_queue_id in response if queue was not called today
 		c.CurrentQueueID = sql.NullInt64{Valid: false}
 	}
 
@@ -620,18 +623,21 @@ func (d *DB) GetCounter(id int64) (*models.Counter, error) {
 }
 
 func (d *DB) ListCounters() ([]*models.Counter, error) {
-	// Join with queues and filter: only show current_queue if it's from today
+	// Get today's date from Go (more reliable than SQLite's localtime)
+	today := time.Now().Format("2006-01-02")
+
+	// Join with queues and filter: only show current_queue if it was CALLED today
 	query := `
 		SELECT
 			c.id, c.counter_number, c.counter_name, c.is_active, c.current_queue_id, c.last_call_at,
 			q.id, q.queue_number, q.queue_type, q.status, q.counter_id, q.created_at, q.called_at, q.completed_at
 		FROM counters c
 		LEFT JOIN queues q ON c.current_queue_id = q.id
-			AND DATE(q.created_at) = DATE('now', 'localtime')
+			AND DATE(q.called_at) = ?
 		ORDER BY CAST(c.counter_number AS INTEGER) ASC, c.counter_number ASC
 	`
 
-	rows, err := d.Query(query)
+	rows, err := d.Query(query, today)
 	if err != nil {
 		return nil, err
 	}
@@ -653,7 +659,7 @@ func (d *DB) ListCounters() ([]*models.Counter, error) {
 		}
 
 		c.PrepareJSON()
-		// Only set CurrentQueue if it's from today (the JOIN already filters this)
+		// Only set CurrentQueue if it was called today (the JOIN already filters this)
 		if qID.Valid {
 			c.CurrentQueue = &models.Queue{
 				ID:          qID.Int64,
@@ -667,7 +673,7 @@ func (d *DB) ListCounters() ([]*models.Counter, error) {
 			}
 			c.CurrentQueue.PrepareJSON()
 		} else {
-			// Reset current_queue_id in response if queue is not from today
+			// Reset current_queue_id in response if queue was not called today
 			c.CurrentQueueID = sql.NullInt64{Valid: false}
 		}
 		counters = append(counters, c)
