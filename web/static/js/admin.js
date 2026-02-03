@@ -4,6 +4,104 @@ let currentFilter = '';
 let currentPage = 1;
 let currentDate = '';
 let currentType = '';
+let currentAdminPage = 'dashboard';
+
+// Page titles mapping
+const pageTitles = {
+    'dashboard': 'Dashboard',
+    'management': 'Kelola Antrian',
+    'display-settings': 'Pengaturan Display',
+    'ticket-settings': 'Pengaturan Tiket',
+    'system-settings': 'Pengaturan Sistem',
+    'reports': 'Laporan & Statistik'
+};
+
+// Show specific page
+function showPage(pageName) {
+    // Update active nav item
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.page === pageName) {
+            item.classList.add('active');
+        }
+    });
+
+    // Show/hide page sections
+    document.querySelectorAll('.page-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    const targetPage = document.getElementById(`page-${pageName}`);
+    if (targetPage) {
+        targetPage.classList.add('active');
+    }
+
+    // Update page title
+    const titleEl = document.getElementById('page-title');
+    if (titleEl && pageTitles[pageName]) {
+        titleEl.textContent = pageTitles[pageName];
+    }
+
+    // Save current page to localStorage
+    localStorage.setItem('admin_current_page', pageName);
+    currentAdminPage = pageName;
+
+    // Close mobile sidebar if open
+    closeMobileSidebar();
+
+    return false; // Prevent default link behavior
+}
+
+// Toggle sidebar collapse
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+        sidebar.classList.toggle('mobile-open');
+        toggleOverlay(sidebar.classList.contains('mobile-open'));
+    } else {
+        sidebar.classList.toggle('collapsed');
+        localStorage.setItem('admin_sidebar_collapsed', sidebar.classList.contains('collapsed'));
+    }
+}
+
+// Close mobile sidebar
+function closeMobileSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.remove('mobile-open');
+    toggleOverlay(false);
+}
+
+// Toggle overlay for mobile
+function toggleOverlay(show) {
+    let overlay = document.querySelector('.sidebar-overlay');
+    if (!overlay && show) {
+        overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        overlay.onclick = closeMobileSidebar;
+        document.body.appendChild(overlay);
+    }
+    if (overlay) {
+        overlay.classList.toggle('show', show);
+    }
+}
+
+// Restore sidebar state
+function restoreSidebarState() {
+    const sidebar = document.getElementById('sidebar');
+    const isCollapsed = localStorage.getItem('admin_sidebar_collapsed') === 'true';
+    if (isCollapsed && window.innerWidth > 768) {
+        sidebar.classList.add('collapsed');
+    }
+}
+
+// Restore current page
+function restoreCurrentPage() {
+    const savedPage = localStorage.getItem('admin_current_page');
+    if (savedPage && pageTitles[savedPage]) {
+        showPage(savedPage);
+    }
+}
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -18,6 +116,10 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCounters();
     loadQueues();
     loadSettings();
+
+    // Restore sidebar and page state
+    restoreSidebarState();
+    restoreCurrentPage();
 
     // Setup status filter buttons
     document.querySelectorAll('.status-filters .btn').forEach(btn => {
@@ -670,7 +772,7 @@ async function saveSettings(event) {
             throw new Error('Failed to save settings');
         }
 
-        alert('Pengaturan berhasil disimpan!');
+        showToast('Video & running text berhasil disimpan!');
     } catch (error) {
         console.error('Failed to save settings:', error);
         alert('Gagal menyimpan pengaturan.');
@@ -843,7 +945,7 @@ async function saveTicketDesign(event) {
             throw new Error('Failed to save ticket design');
         }
 
-        alert('Desain tiket berhasil disimpan!');
+        showToast('Desain tiket berhasil disimpan!');
     } catch (error) {
         console.error('Failed to save ticket design:', error);
         alert('Gagal menyimpan desain tiket.');
@@ -910,7 +1012,7 @@ async function saveTicketAppearance(event) {
         });
 
         if (!response.ok) throw new Error('Failed to save');
-        alert('Pengaturan halaman antrian berhasil disimpan!');
+        showToast('Pengaturan halaman antrian berhasil disimpan!');
     } catch (error) {
         console.error('Failed to save ticket appearance:', error);
         alert('Gagal menyimpan pengaturan.');
@@ -974,7 +1076,7 @@ async function saveDisplayAppearance(event) {
         });
 
         if (!response.ok) throw new Error('Failed to save');
-        alert('Pengaturan display berhasil disimpan!');
+        showToast('Header & branding berhasil disimpan!');
     } catch (error) {
         console.error('Failed to save display appearance:', error);
         alert('Gagal menyimpan pengaturan.');
@@ -1058,7 +1160,7 @@ async function saveSystemSettings(event) {
         });
 
         if (!response.ok) throw new Error('Failed to save');
-        alert('Pengaturan sistem berhasil disimpan!');
+        showToast('Jam operasional berhasil disimpan!');
     } catch (error) {
         console.error('Failed to save system settings:', error);
         alert('Gagal menyimpan pengaturan.');
@@ -1180,6 +1282,106 @@ async function exportReport() {
         console.error('Failed to export report:', error);
         alert('Gagal export laporan.');
     }
+}
+
+// ===================================
+// Split Settings Save Functions
+// ===================================
+
+// Save display widgets settings
+async function saveDisplayWidgets() {
+    const settings = {
+        display_show_video: document.getElementById('display-show-video').checked.toString(),
+        display_show_stats: document.getElementById('display-show-stats').checked.toString(),
+        display_show_history: document.getElementById('display-show-history').checked.toString(),
+        display_show_queue_summary: document.getElementById('display-show-queue-summary').checked.toString()
+    };
+
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+
+        if (!response.ok) throw new Error('Failed to save');
+        showToast('Widget display berhasil disimpan!');
+    } catch (error) {
+        console.error('Failed to save display widgets:', error);
+        alert('Gagal menyimpan pengaturan.');
+    }
+}
+
+// Save display sound settings
+async function saveDisplaySound() {
+    const settings = {
+        display_tts_rate: document.getElementById('display-tts-rate').value,
+        display_ticker_speed: document.getElementById('display-ticker-speed').value,
+        display_sound_enabled: document.getElementById('display-sound-enabled').checked.toString()
+    };
+
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+
+        if (!response.ok) throw new Error('Failed to save');
+        showToast('Pengaturan suara berhasil disimpan!');
+    } catch (error) {
+        console.error('Failed to save display sound:', error);
+        alert('Gagal menyimpan pengaturan.');
+    }
+}
+
+// Save queue limits settings
+async function saveQueueLimits() {
+    const settings = {
+        system_max_queue_daily: document.getElementById('system-max-queue-daily').value,
+        system_max_queue_per_type: document.getElementById('system-max-queue-per-type').value
+    };
+
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+
+        if (!response.ok) throw new Error('Failed to save');
+        showToast('Batas antrian berhasil disimpan!');
+    } catch (error) {
+        console.error('Failed to save queue limits:', error);
+        alert('Gagal menyimpan pengaturan.');
+    }
+}
+
+// Toast notification helper
+function showToast(message) {
+    // Remove existing toast
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 11-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+
+    // Trigger animation
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 // ===================================

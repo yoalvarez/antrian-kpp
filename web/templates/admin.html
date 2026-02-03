@@ -5,445 +5,771 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Sistem Antrian</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/admin.css">
 </head>
 <body>
-    <div class="admin-container">
-        <header class="admin-header">
-            <h1>Panel Admin Sistem Antrian</h1>
-            <nav>
-                <a href="/ticket" target="_blank">Ambil Antrian</a>
-                <a href="/display" target="_blank">Display</a>
-                <a href="/counters" target="_blank">Pilih Loket</a>
-                <button class="btn btn-danger" onclick="showResetModal()">Reset Antrian</button>
+    <div class="admin-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <span class="logo-icon">Q</span>
+                    <span class="logo-text">Antrian</span>
+                </div>
+                <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle Sidebar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <span class="nav-section-title">MENU UTAMA</span>
+                    <a href="#" class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="9"></rect>
+                            <rect x="14" y="3" width="7" height="5"></rect>
+                            <rect x="14" y="12" width="7" height="9"></rect>
+                            <rect x="3" y="16" width="7" height="5"></rect>
+                        </svg>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" class="nav-item" data-page="management" onclick="showPage('management')">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                            <path d="M2 17l10 5 10-5"></path>
+                            <path d="M2 12l10 5 10-5"></path>
+                        </svg>
+                        <span>Kelola Antrian</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-section-title">PENGATURAN</span>
+                    <a href="#" class="nav-item" data-page="display-settings" onclick="showPage('display-settings')">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                        <span>Tampilan Display</span>
+                    </a>
+                    <a href="#" class="nav-item" data-page="ticket-settings" onclick="showPage('ticket-settings')">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h6"></path>
+                            <path d="M15 3h6v6"></path>
+                            <path d="M10 14L21 3"></path>
+                        </svg>
+                        <span>Tiket & Cetak</span>
+                    </a>
+                    <a href="#" class="nav-item" data-page="system-settings" onclick="showPage('system-settings')">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path>
+                        </svg>
+                        <span>Pengaturan Sistem</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-section-title">LAPORAN</span>
+                    <a href="#" class="nav-item" data-page="reports" onclick="showPage('reports')">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                        <span>Laporan & Statistik</span>
+                    </a>
+                </div>
             </nav>
-        </header>
 
+            <div class="sidebar-footer">
+                <div class="quick-links">
+                    <a href="/ticket" target="_blank" class="quick-link" title="Halaman Ambil Antrian">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 5l-1 1"></path>
+                            <path d="M2 12h6"></path>
+                            <path d="M22 12h-6"></path>
+                            <path d="M12 2v6"></path>
+                            <path d="M12 16v6"></path>
+                            <circle cx="12" cy="12" r="4"></circle>
+                        </svg>
+                    </a>
+                    <a href="/display" target="_blank" class="quick-link" title="Halaman Display">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                    </a>
+                    <a href="/counters" target="_blank" class="quick-link" title="Pilih Loket">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 010 7.75"></path>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
         <main class="admin-main">
-            <section class="stats-section">
-                <h2>Statistik Hari Ini</h2>
-                <div class="stats-grid" id="stats">
-                    <div class="stat-card">
-                        <span class="stat-value" id="stat-total">0</span>
-                        <span class="stat-label">Total Antrian</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-value" id="stat-waiting">0</span>
-                        <span class="stat-label">Menunggu</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-value" id="stat-called">0</span>
-                        <span class="stat-label">Dipanggil</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-value" id="stat-completed">0</span>
-                        <span class="stat-label">Selesai</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-value" id="stat-counters">0</span>
-                        <span class="stat-label">Loket Aktif</span>
-                    </div>
+            <!-- Top Header -->
+            <header class="admin-topbar">
+                <div class="topbar-left">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <h1 class="page-title" id="page-title">Dashboard</h1>
                 </div>
-            </section>
+                <div class="topbar-right">
+                    <button class="btn btn-danger btn-sm" onclick="showResetModal()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8"></path>
+                            <path d="M21 3v5h-5"></path>
+                            <path d="M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16"></path>
+                            <path d="M8 16H3v5"></path>
+                        </svg>
+                        Reset Antrian
+                    </button>
+                </div>
+            </header>
 
-            <section class="queue-types-section">
-                <div class="section-header">
-                    <h2>Jenis Antrian</h2>
-                    <button class="btn btn-primary" onclick="showAddQueueTypeModal()">+ Tambah Jenis</button>
-                </div>
-                <div class="queue-types-grid" id="queue-types-list">
-                    <!-- Queue types will be loaded here -->
-                </div>
-            </section>
-
-            <section class="counters-section">
-                <div class="section-header">
-                    <h2>Manajemen Loket</h2>
-                    <button class="btn btn-primary" onclick="showAddCounterModal()">+ Tambah Loket</button>
-                </div>
-                <div class="counters-grid" id="counters-list">
-                    <!-- Counters will be loaded here -->
-                </div>
-            </section>
-
-            <section class="settings-section">
-                <div class="section-header">
-                    <h2>Pengaturan Display</h2>
-                </div>
-                <div class="settings-card">
-                    <form id="display-settings-form" onsubmit="saveSettings(event)">
-                        <div class="form-group">
-                            <label for="setting-video-url">Video YouTube (URL atau ID)</label>
-                            <input type="text" id="setting-video-url" class="form-control" placeholder="Contoh: https://www.youtube.com/watch?v=dQw4w9WgXcQ">
-                            <small>Masukkan URL lengkap atau ID video YouTube.</small>
+            <!-- Page Content Container -->
+            <div class="page-content">
+                <!-- Dashboard Page -->
+                <div class="page-section active" id="page-dashboard">
+                    <!-- Stats Cards -->
+                    <div class="stats-row">
+                        <div class="stat-card stat-primary">
+                            <div class="stat-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                                    <circle cx="8.5" cy="7" r="4"></circle>
+                                    <polyline points="17 11 19 13 23 9"></polyline>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="stat-total">0</span>
+                                <span class="stat-label">Total Antrian</span>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="setting-running-text">Running Text</label>
-                            <textarea id="setting-running-text" class="form-control" rows="3" placeholder="Masukkan teks pengumuman yang akan berjalan..."></textarea>
+                        <div class="stat-card stat-warning">
+                            <div class="stat-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="stat-waiting">0</span>
+                                <span class="stat-label">Menunggu</span>
+                            </div>
                         </div>
-                        <div class="form-actions" style="justify-content: flex-start;">
-                            <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
+                        <div class="stat-card stat-info">
+                            <div class="stat-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                    <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"></path>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="stat-called">0</span>
+                                <span class="stat-label">Dipanggil</span>
+                            </div>
                         </div>
-                    </form>
-                </div>
-            </section>
+                        <div class="stat-card stat-success">
+                            <div class="stat-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="stat-completed">0</span>
+                                <span class="stat-label">Selesai</span>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-purple">
+                            <div class="stat-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                    <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"></path>
+                                </svg>
+                            </div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="stat-counters">0</span>
+                                <span class="stat-label">Loket Aktif</span>
+                            </div>
+                        </div>
+                    </div>
 
-            <section class="ticket-design-section">
-                <div class="section-header">
-                    <h2>Desain Tiket Antrian</h2>
+                    <!-- Queue List Section -->
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h2>Daftar Antrian Hari Ini</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="queue-filters-row">
+                                <div class="filter-group">
+                                    <label>Status:</label>
+                                    <div class="status-filters">
+                                        <button class="btn btn-sm active" data-filter="">Semua</button>
+                                        <button class="btn btn-sm" data-filter="waiting">Menunggu</button>
+                                        <button class="btn btn-sm" data-filter="called">Dipanggil</button>
+                                        <button class="btn btn-sm" data-filter="completed">Selesai</button>
+                                    </div>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="filter-date">Tanggal:</label>
+                                    <input type="date" id="filter-date" class="filter-input" onchange="applyFilters()">
+                                </div>
+                                <div class="filter-group">
+                                    <label for="filter-type">Jenis:</label>
+                                    <select id="filter-type" class="filter-input" onchange="applyFilters()">
+                                        <option value="">Semua Jenis</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="queues-table-container">
+                                <table class="queues-table">
+                                    <thead>
+                                        <tr>
+                                            <th>No. Antrian</th>
+                                            <th>Jenis</th>
+                                            <th>Status</th>
+                                            <th>Loket</th>
+                                            <th>Waktu Ambil</th>
+                                            <th>Waktu Panggil</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="queues-list">
+                                        <!-- Queues will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="pagination" id="pagination"></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="ticket-design-container">
-                    <div class="ticket-design-form">
-                        <form id="ticket-design-form" onsubmit="saveTicketDesign(event)">
-                            <div class="form-group">
-                                <label for="ticket-header">Header Tiket</label>
-                                <input type="text" id="ticket-header" class="form-control" placeholder="SISTEM ANTRIAN" maxlength="32">
-                                <small>Maksimal 32 karakter</small>
+
+                <!-- Management Page -->
+                <div class="page-section" id="page-management">
+                    <!-- Queue Types Section -->
+                    <div class="content-card">
+                        <div class="card-header">
+                            <div class="header-with-icon">
+                                <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                                    <path d="M2 17l10 5 10-5"></path>
+                                    <path d="M2 12l10 5 10-5"></path>
+                                </svg>
+                                <div>
+                                    <h2>Jenis Antrian</h2>
+                                    <p class="header-desc">Kelola kategori layanan antrian</p>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="ticket-subheader">Sub Header</label>
-                                <input type="text" id="ticket-subheader" class="form-control" placeholder="KPP PRATAMA" maxlength="32">
-                                <small>Nama instansi/kantor (opsional)</small>
+                            <button class="btn btn-primary" onclick="showAddQueueTypeModal()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Tambah Jenis
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="queue-types-grid" id="queue-types-list">
+                                <!-- Queue types will be loaded here -->
                             </div>
-                            <div class="form-group">
-                                <label for="ticket-title">Judul Nomor</label>
-                                <input type="text" id="ticket-title" class="form-control" placeholder="NOMOR ANTRIAN ANDA" maxlength="32">
+                        </div>
+                    </div>
+
+                    <!-- Counters Section -->
+                    <div class="content-card">
+                        <div class="card-header">
+                            <div class="header-with-icon">
+                                <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                    <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"></path>
+                                </svg>
+                                <div>
+                                    <h2>Manajemen Loket</h2>
+                                    <p class="header-desc">Atur loket pelayanan yang tersedia</p>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="ticket-footer1">Footer Baris 1</label>
-                                <input type="text" id="ticket-footer1" class="form-control" placeholder="Mohon menunggu hingga" maxlength="32">
+                            <button class="btn btn-primary" onclick="showAddCounterModal()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Tambah Loket
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="counters-grid" id="counters-list">
+                                <!-- Counters will be loaded here -->
                             </div>
-                            <div class="form-group">
-                                <label for="ticket-footer2">Footer Baris 2</label>
-                                <input type="text" id="ticket-footer2" class="form-control" placeholder="nomor Anda dipanggil" maxlength="32">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Display Settings Page -->
+                <div class="page-section" id="page-display-settings">
+                    <div class="settings-intro">
+                        <div class="intro-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                <line x1="8" y1="21" x2="16" y2="21"></line>
+                                <line x1="12" y1="17" x2="12" y2="21"></line>
+                            </svg>
+                        </div>
+                        <div class="intro-text">
+                            <h2>Pengaturan Tampilan Display</h2>
+                            <p>Kustomisasi tampilan layar display antrian yang dilihat pengunjung</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-grid-layout">
+                        <!-- Video & Running Text -->
+                        <div class="content-card">
+                            <div class="card-header compact">
+                                <h3>Video & Running Text</h3>
                             </div>
-                            <div class="form-group">
-                                <label for="ticket-thanks">Pesan Terima Kasih</label>
-                                <input type="text" id="ticket-thanks" class="form-control" placeholder="Terima kasih" maxlength="32">
+                            <div class="card-body">
+                                <form id="display-settings-form" onsubmit="saveSettings(event)">
+                                    <div class="form-group">
+                                        <label for="setting-video-url">
+                                            Video YouTube
+                                            <span class="label-hint">URL atau ID video</span>
+                                        </label>
+                                        <input type="text" id="setting-video-url" class="form-control" placeholder="https://youtube.com/watch?v=...">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="setting-running-text">Running Text (Pengumuman)</label>
+                                        <textarea id="setting-running-text" class="form-control" rows="3" placeholder="Teks yang akan berjalan di bagian bawah display..."></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Simpan</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Header & Branding -->
+                        <div class="content-card">
+                            <div class="card-header compact">
+                                <h3>Header & Branding</h3>
+                            </div>
+                            <div class="card-body">
+                                <form id="display-appearance-form" onsubmit="saveDisplayAppearance(event)">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="display-title">Judul Display</label>
+                                            <input type="text" id="display-title" class="form-control" placeholder="Sistem Antrian Pelayanan" maxlength="50">
+                                        </div>
+                                        <div class="form-group" style="max-width: 120px;">
+                                            <label for="display-logo-text">Teks Logo</label>
+                                            <input type="text" id="display-logo-text" class="form-control" placeholder="Q" maxlength="3">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="display-recent-calls-count">Jumlah Card Panggilan</label>
+                                            <input type="number" id="display-recent-calls-count" class="form-control" min="3" max="10" value="6">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="display-history-count">Jumlah Riwayat</label>
+                                            <input type="number" id="display-history-count" class="form-control" min="5" max="30" value="15">
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Simpan</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Widget Visibility -->
+                        <div class="content-card">
+                            <div class="card-header compact">
+                                <h3>Widget yang Ditampilkan</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="toggle-list">
+                                    <label class="toggle-item">
+                                        <input type="checkbox" id="display-show-video" checked>
+                                        <span class="toggle-label">
+                                            <span class="toggle-title">Video YouTube</span>
+                                            <span class="toggle-desc">Tampilkan video di samping daftar antrian</span>
+                                        </span>
+                                    </label>
+                                    <label class="toggle-item">
+                                        <input type="checkbox" id="display-show-stats" checked>
+                                        <span class="toggle-label">
+                                            <span class="toggle-title">Statistik Header</span>
+                                            <span class="toggle-desc">Tampilkan jumlah antrian di header</span>
+                                        </span>
+                                    </label>
+                                    <label class="toggle-item">
+                                        <input type="checkbox" id="display-show-history" checked>
+                                        <span class="toggle-label">
+                                            <span class="toggle-title">Riwayat Panggilan</span>
+                                            <span class="toggle-desc">Tampilkan daftar riwayat panggilan</span>
+                                        </span>
+                                    </label>
+                                    <label class="toggle-item">
+                                        <input type="checkbox" id="display-show-queue-summary" checked>
+                                        <span class="toggle-label">
+                                            <span class="toggle-title">Ringkasan Antrian</span>
+                                            <span class="toggle-desc">Tampilkan ringkasan per jenis antrian</span>
+                                        </span>
+                                    </label>
+                                </div>
+                                <button type="button" class="btn btn-primary" onclick="saveDisplayWidgets()">Simpan</button>
+                            </div>
+                        </div>
+
+                        <!-- Sound & TTS -->
+                        <div class="content-card">
+                            <div class="card-header compact">
+                                <h3>Suara & Text-to-Speech</h3>
+                            </div>
+                            <div class="card-body">
+                                <label class="toggle-item" style="margin-bottom: 1rem;">
+                                    <input type="checkbox" id="display-sound-enabled" checked>
+                                    <span class="toggle-label">
+                                        <span class="toggle-title">Aktifkan Suara Panggilan</span>
+                                        <span class="toggle-desc">Bunyi bell saat memanggil antrian</span>
+                                    </span>
+                                </label>
+                                <div class="form-group">
+                                    <label for="display-tts-rate">
+                                        Kecepatan Suara TTS
+                                        <span class="range-value" id="tts-rate-value">0.6</span>
+                                    </label>
+                                    <input type="range" id="display-tts-rate" class="form-control" min="0.5" max="1.0" step="0.1" value="0.6">
+                                    <div class="range-labels">
+                                        <span>Lambat</span>
+                                        <span>Normal</span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="display-ticker-speed">
+                                        Kecepatan Running Text
+                                        <span class="range-value" id="ticker-speed-value">45</span>s
+                                    </label>
+                                    <input type="range" id="display-ticker-speed" class="form-control" min="20" max="80" step="5" value="45">
+                                    <div class="range-labels">
+                                        <span>Cepat</span>
+                                        <span>Lambat</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-primary" onclick="saveDisplaySound()">Simpan</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ticket Settings Page -->
+                <div class="page-section" id="page-ticket-settings">
+                    <div class="settings-intro">
+                        <div class="intro-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h6"></path>
+                                <path d="M15 3h6v6"></path>
+                                <path d="M10 14L21 3"></path>
+                            </svg>
+                        </div>
+                        <div class="intro-text">
+                            <h2>Pengaturan Tiket & Cetak</h2>
+                            <p>Kustomisasi desain tiket dan halaman pengambilan antrian</p>
+                        </div>
+                    </div>
+
+                    <div class="ticket-settings-layout">
+                        <!-- Ticket Design Form -->
+                        <div class="content-card">
+                            <div class="card-header compact">
+                                <h3>Desain Tiket Antrian</h3>
+                            </div>
+                            <div class="card-body">
+                                <form id="ticket-design-form" onsubmit="saveTicketDesign(event)">
+                                    <div class="form-group">
+                                        <label for="ticket-header">Header Tiket</label>
+                                        <input type="text" id="ticket-header" class="form-control" placeholder="SISTEM ANTRIAN" maxlength="32">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ticket-subheader">Sub Header (Nama Instansi)</label>
+                                        <input type="text" id="ticket-subheader" class="form-control" placeholder="KPP PRATAMA" maxlength="32">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ticket-title">Judul Nomor</label>
+                                        <input type="text" id="ticket-title" class="form-control" placeholder="NOMOR ANTRIAN ANDA" maxlength="32">
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="ticket-footer1">Footer Baris 1</label>
+                                            <input type="text" id="ticket-footer1" class="form-control" placeholder="Mohon menunggu hingga" maxlength="32">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="ticket-footer2">Footer Baris 2</label>
+                                            <input type="text" id="ticket-footer2" class="form-control" placeholder="nomor Anda dipanggil" maxlength="32">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ticket-thanks">Pesan Terima Kasih</label>
+                                        <input type="text" id="ticket-thanks" class="form-control" placeholder="Terima kasih" maxlength="32">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Elemen yang Ditampilkan:</label>
+                                        <div class="checkbox-group-compact">
+                                            <label class="checkbox-label"><input type="checkbox" id="ticket-show-subheader" checked> Sub Header</label>
+                                            <label class="checkbox-label"><input type="checkbox" id="ticket-show-type" checked> Jenis Layanan</label>
+                                            <label class="checkbox-label"><input type="checkbox" id="ticket-show-datetime" checked> Tanggal & Waktu</label>
+                                            <label class="checkbox-label"><input type="checkbox" id="ticket-show-footer" checked> Footer</label>
+                                            <label class="checkbox-label"><input type="checkbox" id="ticket-show-thanks" checked> Terima Kasih</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="btn-group">
+                                        <button type="submit" class="btn btn-primary">Simpan Desain</button>
+                                        <button type="button" class="btn" onclick="testPrintTicket()">Test Print</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Ticket Preview -->
+                        <div class="ticket-preview-wrapper">
+                            <h4>Preview Tiket</h4>
+                            <div class="ticket-preview" id="ticket-preview">
+                                <div class="preview-header" id="preview-header">SISTEM ANTRIAN</div>
+                                <div class="preview-subheader" id="preview-subheader">KPP PRATAMA</div>
+                                <div class="preview-separator">--------------------------------</div>
+                                <div class="preview-title" id="preview-title">NOMOR ANTRIAN ANDA</div>
+                                <div class="preview-number">A001</div>
+                                <div class="preview-type" id="preview-type-label">Umum</div>
+                                <div class="preview-separator">--------------------------------</div>
+                                <div class="preview-datetime" id="preview-datetime">14/01/2026, 12:00:00</div>
+                                <div class="preview-separator">--------------------------------</div>
+                                <div class="preview-footer" id="preview-footer">
+                                    <div id="preview-footer1">Mohon menunggu hingga</div>
+                                    <div id="preview-footer2">nomor Anda dipanggil</div>
+                                </div>
+                                <div class="preview-thanks" id="preview-thanks">Terima kasih</div>
+                            </div>
+                            <small class="preview-note">Preview untuk printer thermal 80mm</small>
+                        </div>
+                    </div>
+
+                    <!-- Ticket Page Settings -->
+                    <div class="content-card" style="margin-top: 1.5rem;">
+                        <div class="card-header compact">
+                            <h3>Pengaturan Halaman Ambil Antrian</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="ticket-appearance-form" onsubmit="saveTicketAppearance(event)">
+                                <div class="settings-grid">
+                                    <div class="form-group">
+                                        <label for="ticket-page-title">Judul Halaman</label>
+                                        <input type="text" id="ticket-page-title" class="form-control" placeholder="Sistem Antrian" maxlength="50">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ticket-page-subtitle">Sub Judul</label>
+                                        <input type="text" id="ticket-page-subtitle" class="form-control" placeholder="KPP Pratama" maxlength="50">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ticket-welcome-text">Teks Sambutan</label>
+                                        <input type="text" id="ticket-welcome-text" class="form-control" placeholder="Selamat Datang" maxlength="50">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ticket-instruction-text">Teks Instruksi</label>
+                                        <input type="text" id="ticket-instruction-text" class="form-control" placeholder="Silakan pilih jenis layanan..." maxlength="100">
+                                    </div>
+                                </div>
+                                <div class="toggle-list-inline">
+                                    <label class="toggle-item-inline">
+                                        <input type="checkbox" id="ticket-auto-print" checked>
+                                        <span>Auto Print Tiket</span>
+                                    </label>
+                                    <label class="toggle-item-inline">
+                                        <input type="checkbox" id="ticket-show-queue-count" checked>
+                                        <span>Tampilkan Jumlah Antrian</span>
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Settings Page -->
+                <div class="page-section" id="page-system-settings">
+                    <div class="settings-intro">
+                        <div class="intro-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path>
+                            </svg>
+                        </div>
+                        <div class="intro-text">
+                            <h2>Pengaturan Sistem</h2>
+                            <p>Atur jam operasional dan batasan antrian</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-grid-layout">
+                        <!-- Operating Hours -->
+                        <div class="content-card">
+                            <div class="card-header compact">
+                                <h3>Jam Operasional</h3>
+                            </div>
+                            <div class="card-body">
+                                <form id="system-settings-form" onsubmit="saveSystemSettings(event)">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="system-open-time">Jam Buka</label>
+                                            <input type="time" id="system-open-time" class="form-control" value="08:00">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="system-close-time">Jam Tutup</label>
+                                            <input type="time" id="system-close-time" class="form-control" value="16:00">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Hari Operasional:</label>
+                                        <div class="day-selector">
+                                            <label class="day-checkbox"><input type="checkbox" id="day-mon" checked><span>Sen</span></label>
+                                            <label class="day-checkbox"><input type="checkbox" id="day-tue" checked><span>Sel</span></label>
+                                            <label class="day-checkbox"><input type="checkbox" id="day-wed" checked><span>Rab</span></label>
+                                            <label class="day-checkbox"><input type="checkbox" id="day-thu" checked><span>Kam</span></label>
+                                            <label class="day-checkbox"><input type="checkbox" id="day-fri" checked><span>Jum</span></label>
+                                            <label class="day-checkbox"><input type="checkbox" id="day-sat"><span>Sab</span></label>
+                                            <label class="day-checkbox"><input type="checkbox" id="day-sun"><span>Min</span></label>
+                                        </div>
+                                    </div>
+                                    <label class="toggle-item" style="margin-bottom: 1rem;">
+                                        <input type="checkbox" id="system-enforce-hours" checked>
+                                        <span class="toggle-label">
+                                            <span class="toggle-title">Terapkan Jam Operasional</span>
+                                            <span class="toggle-desc">Pengambilan antrian hanya saat jam operasional</span>
+                                        </span>
+                                    </label>
+                                    <button type="submit" class="btn btn-primary">Simpan</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Queue Limits -->
+                        <div class="content-card">
+                            <div class="card-header compact">
+                                <h3>Batas Antrian</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label for="system-max-queue-daily">
+                                        Maksimal Antrian per Hari
+                                        <span class="label-hint">0 = tidak terbatas</span>
+                                    </label>
+                                    <input type="number" id="system-max-queue-daily" class="form-control" min="0" value="0" placeholder="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="system-max-queue-per-type">
+                                        Maksimal per Jenis Antrian
+                                        <span class="label-hint">0 = tidak terbatas</span>
+                                    </label>
+                                    <input type="number" id="system-max-queue-per-type" class="form-control" min="0" value="0" placeholder="0">
+                                </div>
+                                <button type="button" class="btn btn-primary" onclick="saveQueueLimits()">Simpan</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports Page -->
+                <div class="page-section" id="page-reports">
+                    <div class="settings-intro">
+                        <div class="intro-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="20" x2="18" y2="10"></line>
+                                <line x1="12" y1="20" x2="12" y2="4"></line>
+                                <line x1="6" y1="20" x2="6" y2="14"></line>
+                            </svg>
+                        </div>
+                        <div class="intro-text">
+                            <h2>Laporan & Statistik</h2>
+                            <p>Lihat performa layanan dan ekspor data</p>
+                        </div>
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-body">
+                            <div class="report-filters">
+                                <div class="filter-group">
+                                    <label for="report-start-date">Dari Tanggal:</label>
+                                    <input type="date" id="report-start-date" class="filter-input">
+                                </div>
+                                <div class="filter-group">
+                                    <label for="report-end-date">Sampai Tanggal:</label>
+                                    <input type="date" id="report-end-date" class="filter-input">
+                                </div>
+                                <button class="btn btn-primary" onclick="loadReport()">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                    Tampilkan
+                                </button>
+                                <button class="btn" onclick="exportReport()">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    Export CSV
+                                </button>
                             </div>
 
-                            <div class="form-group">
-                                <label>Elemen yang Ditampilkan:</label>
-                                <div class="checkbox-group">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="ticket-show-subheader" checked> Sub Header
-                                    </label>
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="ticket-show-type" checked> Jenis Layanan
-                                    </label>
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="ticket-show-datetime" checked> Tanggal & Waktu
-                                    </label>
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="ticket-show-footer" checked> Footer
-                                    </label>
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="ticket-show-thanks" checked> Pesan Terima Kasih
-                                    </label>
+                            <div class="report-summary" id="report-summary">
+                                <div class="report-card">
+                                    <span class="report-value" id="report-total">0</span>
+                                    <span class="report-label">Total Antrian</span>
+                                </div>
+                                <div class="report-card">
+                                    <span class="report-value" id="report-completed">0</span>
+                                    <span class="report-label">Selesai Dilayani</span>
+                                </div>
+                                <div class="report-card">
+                                    <span class="report-value" id="report-cancelled">0</span>
+                                    <span class="report-label">Dibatalkan/Lewat</span>
+                                </div>
+                                <div class="report-card">
+                                    <span class="report-value" id="report-avg-time">-</span>
+                                    <span class="report-label">Rata-rata Waktu Tunggu</span>
                                 </div>
                             </div>
 
-                            <div class="form-actions" style="justify-content: flex-start; gap: 0.5rem;">
-                                <button type="submit" class="btn btn-primary">Simpan Desain</button>
-                                <button type="button" class="btn" onclick="testPrintTicket()">Test Print</button>
+                            <div class="report-chart-container">
+                                <h4>Grafik Antrian per Hari</h4>
+                                <div class="report-chart" id="report-chart">
+                                    <p style="color: var(--text-muted); text-align: center; padding: 2rem;">Pilih rentang tanggal dan klik "Tampilkan"</p>
+                                </div>
                             </div>
-                        </form>
-                    </div>
 
-                    <div class="ticket-preview-container">
-                        <h4>Preview Tiket</h4>
-                        <div class="ticket-preview" id="ticket-preview">
-                            <div class="preview-header" id="preview-header">SISTEM ANTRIAN</div>
-                            <div class="preview-subheader" id="preview-subheader">KPP PRATAMA</div>
-                            <div class="preview-separator">--------------------------------</div>
-                            <div class="preview-title" id="preview-title">NOMOR ANTRIAN ANDA</div>
-                            <div class="preview-number">A001</div>
-                            <div class="preview-type" id="preview-type-label">Umum</div>
-                            <div class="preview-separator">--------------------------------</div>
-                            <div class="preview-datetime" id="preview-datetime">14/01/2026, 12:00:00</div>
-                            <div class="preview-separator">--------------------------------</div>
-                            <div class="preview-footer" id="preview-footer">
-                                <div id="preview-footer1">Mohon menunggu hingga</div>
-                                <div id="preview-footer2">nomor Anda dipanggil</div>
+                            <div class="report-by-type" id="report-by-type">
+                                <!-- Will be populated by JS -->
                             </div>
-                            <div class="preview-thanks" id="preview-thanks">Terima kasih</div>
                         </div>
-                        <small class="preview-note">Preview simulasi untuk printer thermal 80mm</small>
                     </div>
                 </div>
-            </section>
-
-            <!-- Pengaturan Tampilan Ticket -->
-            <section class="ticket-appearance-section">
-                <div class="section-header">
-                    <h2>Pengaturan Halaman Ambil Antrian</h2>
-                </div>
-                <div class="settings-card">
-                    <form id="ticket-appearance-form" onsubmit="saveTicketAppearance(event)">
-                        <div class="settings-grid">
-                            <div class="form-group">
-                                <label for="ticket-page-title">Judul Halaman</label>
-                                <input type="text" id="ticket-page-title" class="form-control" placeholder="Sistem Antrian" maxlength="50">
-                            </div>
-                            <div class="form-group">
-                                <label for="ticket-page-subtitle">Sub Judul</label>
-                                <input type="text" id="ticket-page-subtitle" class="form-control" placeholder="KPP Pratama" maxlength="50">
-                            </div>
-                            <div class="form-group">
-                                <label for="ticket-welcome-text">Teks Sambutan</label>
-                                <input type="text" id="ticket-welcome-text" class="form-control" placeholder="Selamat Datang" maxlength="50">
-                            </div>
-                            <div class="form-group">
-                                <label for="ticket-instruction-text">Teks Instruksi</label>
-                                <input type="text" id="ticket-instruction-text" class="form-control" placeholder="Silakan pilih jenis layanan..." maxlength="100">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Opsi Tambahan:</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="ticket-auto-print" checked> Auto Print Tiket
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="ticket-show-queue-count" checked> Tampilkan Jumlah Antrian
-                                </label>
-                            </div>
-                        </div>
-                        <div class="form-actions" style="justify-content: flex-start;">
-                            <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
-                        </div>
-                    </form>
-                </div>
-            </section>
-
-            <!-- Pengaturan Tampilan Display -->
-            <section class="display-appearance-section">
-                <div class="section-header">
-                    <h2>Pengaturan Halaman Display</h2>
-                </div>
-                <div class="settings-card">
-                    <form id="display-appearance-form" onsubmit="saveDisplayAppearance(event)">
-                        <h4 style="margin-bottom: 1rem; color: var(--text-color);">Header & Branding</h4>
-                        <div class="settings-grid">
-                            <div class="form-group">
-                                <label for="display-title">Judul Display</label>
-                                <input type="text" id="display-title" class="form-control" placeholder="Sistem Antrian Pelayanan" maxlength="50">
-                            </div>
-                            <div class="form-group">
-                                <label for="display-logo-text">Teks Logo</label>
-                                <input type="text" id="display-logo-text" class="form-control" placeholder="Q" maxlength="3">
-                                <small>1-3 karakter untuk logo</small>
-                            </div>
-                        </div>
-
-                        <h4 style="margin: 1.5rem 0 1rem; color: var(--text-color);">Layout & Widget</h4>
-                        <div class="settings-grid">
-                            <div class="form-group">
-                                <label for="display-recent-calls-count">Jumlah Card Panggilan</label>
-                                <input type="number" id="display-recent-calls-count" class="form-control" min="3" max="10" value="6">
-                                <small>3-10 card panggilan terbaru</small>
-                            </div>
-                            <div class="form-group">
-                                <label for="display-history-count">Jumlah Riwayat</label>
-                                <input type="number" id="display-history-count" class="form-control" min="5" max="30" value="15">
-                                <small>5-30 item riwayat</small>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Widget yang Ditampilkan:</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="display-show-video" checked> Video YouTube
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="display-show-stats" checked> Statistik Header
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="display-show-history" checked> Riwayat Panggilan
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="display-show-queue-summary" checked> Ringkasan Antrian
-                                </label>
-                            </div>
-                        </div>
-
-                        <h4 style="margin: 1.5rem 0 1rem; color: var(--text-color);">Suara & TTS</h4>
-                        <div class="settings-grid">
-                            <div class="form-group">
-                                <label for="display-tts-rate">Kecepatan Suara TTS</label>
-                                <input type="range" id="display-tts-rate" class="form-control" min="0.5" max="1.0" step="0.1" value="0.6">
-                                <small>Lambat (0.5) - Normal (1.0): <span id="tts-rate-value">0.6</span></small>
-                            </div>
-                            <div class="form-group">
-                                <label for="display-ticker-speed">Kecepatan Running Text</label>
-                                <input type="range" id="display-ticker-speed" class="form-control" min="20" max="80" step="5" value="45">
-                                <small>Cepat (20s) - Lambat (80s): <span id="ticker-speed-value">45</span>s</small>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="display-sound-enabled" checked> Aktifkan Suara Panggilan
-                            </label>
-                        </div>
-
-                        <div class="form-actions" style="justify-content: flex-start;">
-                            <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
-                        </div>
-                    </form>
-                </div>
-            </section>
-
-            <!-- Pengaturan Sistem -->
-            <section class="system-settings-section">
-                <div class="section-header">
-                    <h2>Pengaturan Sistem</h2>
-                </div>
-                <div class="settings-card">
-                    <form id="system-settings-form" onsubmit="saveSystemSettings(event)">
-                        <h4 style="margin-bottom: 1rem; color: var(--text-color);">Jam Operasional</h4>
-                        <div class="settings-grid">
-                            <div class="form-group">
-                                <label for="system-open-time">Jam Buka</label>
-                                <input type="time" id="system-open-time" class="form-control" value="08:00">
-                            </div>
-                            <div class="form-group">
-                                <label for="system-close-time">Jam Tutup</label>
-                                <input type="time" id="system-close-time" class="form-control" value="16:00">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Hari Operasional:</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-label"><input type="checkbox" id="day-mon" checked> Senin</label>
-                                <label class="checkbox-label"><input type="checkbox" id="day-tue" checked> Selasa</label>
-                                <label class="checkbox-label"><input type="checkbox" id="day-wed" checked> Rabu</label>
-                                <label class="checkbox-label"><input type="checkbox" id="day-thu" checked> Kamis</label>
-                                <label class="checkbox-label"><input type="checkbox" id="day-fri" checked> Jumat</label>
-                                <label class="checkbox-label"><input type="checkbox" id="day-sat"> Sabtu</label>
-                                <label class="checkbox-label"><input type="checkbox" id="day-sun"> Minggu</label>
-                            </div>
-                        </div>
-
-                        <h4 style="margin: 1.5rem 0 1rem; color: var(--text-color);">Batas Antrian</h4>
-                        <div class="settings-grid">
-                            <div class="form-group">
-                                <label for="system-max-queue-daily">Maksimal Antrian per Hari</label>
-                                <input type="number" id="system-max-queue-daily" class="form-control" min="0" value="0" placeholder="0 = tidak terbatas">
-                                <small>0 = tidak ada batas</small>
-                            </div>
-                            <div class="form-group">
-                                <label for="system-max-queue-per-type">Maksimal per Jenis Antrian</label>
-                                <input type="number" id="system-max-queue-per-type" class="form-control" min="0" value="0" placeholder="0 = tidak terbatas">
-                                <small>0 = tidak ada batas</small>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="system-enforce-hours" checked> Terapkan Jam Operasional
-                            </label>
-                            <small style="display: block; margin-top: 0.25rem;">Jika aktif, pengambilan antrian hanya bisa dilakukan saat jam operasional</small>
-                        </div>
-
-                        <div class="form-actions" style="justify-content: flex-start;">
-                            <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
-                        </div>
-                    </form>
-                </div>
-            </section>
-
-            <!-- Laporan & Statistik -->
-            <section class="reports-section">
-                <div class="section-header">
-                    <h2>Laporan & Statistik</h2>
-                </div>
-                <div class="reports-container">
-                    <div class="report-filters">
-                        <div class="filter-group">
-                            <label for="report-start-date">Dari Tanggal:</label>
-                            <input type="date" id="report-start-date" class="filter-input">
-                        </div>
-                        <div class="filter-group">
-                            <label for="report-end-date">Sampai Tanggal:</label>
-                            <input type="date" id="report-end-date" class="filter-input">
-                        </div>
-                        <button class="btn btn-primary" onclick="loadReport()">Tampilkan Laporan</button>
-                        <button class="btn" onclick="exportReport()">Export CSV</button>
-                    </div>
-                    <div class="report-summary" id="report-summary">
-                        <div class="report-card">
-                            <span class="report-value" id="report-total">0</span>
-                            <span class="report-label">Total Antrian</span>
-                        </div>
-                        <div class="report-card">
-                            <span class="report-value" id="report-completed">0</span>
-                            <span class="report-label">Selesai Dilayani</span>
-                        </div>
-                        <div class="report-card">
-                            <span class="report-value" id="report-cancelled">0</span>
-                            <span class="report-label">Dibatalkan/Lewat</span>
-                        </div>
-                        <div class="report-card">
-                            <span class="report-value" id="report-avg-time">-</span>
-                            <span class="report-label">Rata-rata Waktu Tunggu</span>
-                        </div>
-                    </div>
-                    <div class="report-chart-container">
-                        <h4>Grafik Antrian per Hari</h4>
-                        <div class="report-chart" id="report-chart">
-                            <p style="color: var(--text-muted); text-align: center; padding: 2rem;">Pilih rentang tanggal dan klik "Tampilkan Laporan"</p>
-                        </div>
-                    </div>
-                    <div class="report-by-type" id="report-by-type">
-                        <!-- Will be populated by JS -->
-                    </div>
-                </div>
-            </section>
-
-            <section class="queues-section">
-                <div class="section-header">
-                    <h2>Daftar Antrian</h2>
-                </div>
-                <div class="queue-filters-row">
-                    <div class="filter-group">
-                        <label>Status:</label>
-                        <div class="status-filters">
-                            <button class="btn btn-sm active" data-filter="">Semua</button>
-                            <button class="btn btn-sm" data-filter="waiting">Menunggu</button>
-                            <button class="btn btn-sm" data-filter="called">Dipanggil</button>
-                            <button class="btn btn-sm" data-filter="completed">Selesai</button>
-                        </div>
-                    </div>
-                    <div class="filter-group">
-                        <label for="filter-date">Tanggal:</label>
-                        <input type="date" id="filter-date" class="filter-input" onchange="applyFilters()">
-                    </div>
-                    <div class="filter-group">
-                        <label for="filter-type">Jenis:</label>
-                        <select id="filter-type" class="filter-input" onchange="applyFilters()">
-                            <option value="">Semua Jenis</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="queues-table-container">
-                    <table class="queues-table">
-                        <thead>
-                            <tr>
-                                <th>No. Antrian</th>
-                                <th>Jenis</th>
-                                <th>Status</th>
-                                <th>Loket</th>
-                                <th>Waktu Ambil</th>
-                                <th>Waktu Panggil</th>
-                            </tr>
-                        </thead>
-                        <tbody id="queues-list">
-                            <!-- Queues will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-                <div class="pagination" id="pagination">
-                    <!-- Pagination will be loaded here -->
-                </div>
-            </section>
+            </div>
         </main>
     </div>
 
@@ -463,7 +789,7 @@
                 <div class="form-group">
                     <label for="counter-name">Nama Tampilan <span style="color: #6b7280; font-weight: normal;">(opsional)</span></label>
                     <input type="text" id="counter-name" placeholder="Otomatis: Loket 1">
-                    <small>Kosongkan untuk menggunakan nama otomatis "Loket [nomor]"</small>
+                    <small>Kosongkan untuk menggunakan nama otomatis</small>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn" onclick="closeModal('add-counter-modal')">Batal</button>
@@ -526,7 +852,7 @@
                 <div class="form-group">
                     <label for="queue-type-prefix">Prefix Nomor</label>
                     <input type="text" id="queue-type-prefix" required placeholder="A" maxlength="5">
-                    <small>Awalan nomor antrian (contoh: A untuk A001, A002)</small>
+                    <small>Awalan nomor antrian (contoh: A untuk A001)</small>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn" onclick="closeModal('add-queue-type-modal')">Batal</button>
@@ -554,7 +880,7 @@
                     <input type="text" id="edit-queue-type-prefix" required maxlength="5">
                 </div>
                 <div class="form-group">
-                    <label>
+                    <label class="checkbox-label">
                         <input type="checkbox" id="edit-queue-type-active"> Aktif
                     </label>
                 </div>
@@ -583,7 +909,6 @@
                     <label for="reset-queue-type">Pilih Jenis Antrian:</label>
                     <select id="reset-queue-type" class="filter-input" style="width: 100%;">
                         <option value="">Semua Jenis Antrian</option>
-                        <!-- Options akan diisi oleh JavaScript -->
                     </select>
                 </div>
 

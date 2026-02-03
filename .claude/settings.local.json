@@ -4,7 +4,8 @@
       "Bash(go build:*)",
       "Bash(timeout:*)",
       "Bash(go mod tidy:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(wc:*)"
     ]
   }
 }
