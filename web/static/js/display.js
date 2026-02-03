@@ -17,6 +17,10 @@ let TTS_RATE = 0.6;
 let TICKER_SPEED = 45;
 let SOUND_ENABLED = true;
 
+// Audio persistence key
+const AUDIO_STORAGE_KEY = 'display_audio_enabled';
+let audioInitialized = false;
+
 // Check if a date string is from today
 function isToday(dateStr) {
     if (!dateStr) return false;
@@ -67,6 +71,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Polling fallback - check for updates every 2 seconds if SSE is down
     setInterval(pollForUpdates, 2000);
+
+    // Initialize auto-enable audio system
+    initAutoAudio();
 });
 
 // Update date time
@@ -397,7 +404,71 @@ function updateDisplaySettings(settings) {
     }
 }
 
-// Enable audio (requires user interaction)
+// Initialize auto-audio system
+function initAutoAudio() {
+    const wasEnabled = localStorage.getItem(AUDIO_STORAGE_KEY) === 'true';
+    const btn = document.getElementById("enable-audio-btn");
+
+    if (wasEnabled) {
+        // User previously enabled audio - show "waiting for interaction" state
+        updateAudioButtonState('waiting');
+
+        // Add interaction listeners to auto-enable on any user interaction
+        addAutoEnableListeners();
+    } else {
+        // First time - show normal enable button
+        updateAudioButtonState('disabled');
+    }
+}
+
+// Add listeners to auto-enable audio on any user interaction
+function addAutoEnableListeners() {
+    const interactionEvents = ['click', 'touchstart', 'keydown'];
+
+    const autoEnableHandler = function(e) {
+        // Don't auto-enable if clicking disable button when audio is already active
+        if (audioEnabled && audioInitialized) return;
+
+        // Enable audio silently
+        enableAudioSilent();
+
+        // Remove all listeners after first interaction
+        interactionEvents.forEach(event => {
+            document.removeEventListener(event, autoEnableHandler, { capture: true });
+        });
+    };
+
+    interactionEvents.forEach(event => {
+        document.addEventListener(event, autoEnableHandler, { capture: true, once: false });
+    });
+}
+
+// Enable audio silently (no bell sound)
+function enableAudioSilent() {
+    if (audioInitialized) return;
+
+    try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        if ("speechSynthesis" in window) {
+            const utterance = new SpeechSynthesisUtterance("");
+            speechSynthesis.speak(utterance);
+        }
+
+        audioEnabled = true;
+        audioInitialized = true;
+
+        // Save preference
+        localStorage.setItem(AUDIO_STORAGE_KEY, 'true');
+
+        updateAudioButtonState('enabled');
+        console.log("Audio auto-enabled successfully");
+    } catch (e) {
+        console.error("Failed to auto-enable audio:", e);
+    }
+}
+
+// Enable audio (manual click - plays bell)
 function enableAudio() {
     try {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -408,9 +479,72 @@ function enableAudio() {
         }
 
         audioEnabled = true;
+        audioInitialized = true;
 
-        const btn = document.getElementById("enable-audio-btn");
-        if (btn) {
+        // Save preference
+        localStorage.setItem(AUDIO_STORAGE_KEY, 'true');
+
+        updateAudioButtonState('enabled');
+
+        playBell();
+        console.log("Audio enabled successfully");
+    } catch (e) {
+        console.error("Failed to enable audio:", e);
+    }
+}
+
+// Disable audio
+function disableAudio() {
+    audioEnabled = false;
+    audioInitialized = false;
+
+    // Clear preference
+    localStorage.removeItem(AUDIO_STORAGE_KEY);
+
+    if (audioContext) {
+        audioContext.close().catch(() => {});
+        audioContext = null;
+    }
+
+    updateAudioButtonState('disabled');
+    console.log("Audio disabled");
+}
+
+// Toggle audio state
+function toggleAudio() {
+    if (audioEnabled) {
+        disableAudio();
+    } else {
+        enableAudio();
+    }
+}
+
+// Update audio button state
+function updateAudioButtonState(state) {
+    const btn = document.getElementById("enable-audio-btn");
+    if (!btn) return;
+
+    btn.style.display = "flex";
+
+    switch (state) {
+        case 'waiting':
+            // Waiting for user interaction (previously enabled)
+            btn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <line x1="23" y1="9" x2="17" y2="15"></line>
+                    <line x1="17" y1="9" x2="23" y2="15"></line>
+                </svg>
+                <span>Klik untuk Audio</span>
+            `;
+            btn.style.background = "var(--warning-soft, #fef3c7)";
+            btn.style.borderColor = "var(--warning, #f59e0b)";
+            btn.style.color = "var(--warning-dark, #92400e)";
+            btn.onclick = enableAudio;
+            break;
+
+        case 'enabled':
+            // Audio is active
             btn.innerHTML = `
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -421,16 +555,30 @@ function enableAudio() {
             btn.style.background = "var(--success)";
             btn.style.borderColor = "var(--success)";
             btn.style.color = "white";
+            btn.onclick = toggleAudio;
 
+            // Hide after 3 seconds but keep it accessible
             setTimeout(() => {
-                btn.style.display = "none";
-            }, 2000);
-        }
+                btn.style.opacity = "0.7";
+            }, 3000);
+            break;
 
-        playBell();
-        console.log("Audio enabled successfully");
-    } catch (e) {
-        console.error("Failed to enable audio:", e);
+        case 'disabled':
+        default:
+            // Audio is off
+            btn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+                <span>Aktifkan Audio</span>
+            `;
+            btn.style.background = "var(--accent-soft)";
+            btn.style.borderColor = "var(--accent)";
+            btn.style.color = "var(--accent)";
+            btn.style.opacity = "1";
+            btn.onclick = enableAudio;
+            break;
     }
 }
 

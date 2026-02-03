@@ -139,6 +139,85 @@ body {
     font-weight: 600;
 }
 
+/* Collapsible Sections */
+.collapsible-section {
+    margin-bottom: 1rem;
+}
+
+.collapsible-header {
+    cursor: pointer;
+    user-select: none;
+    padding: 0.75rem 1rem;
+    background: var(--card-bg);
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+    margin-bottom: 0;
+}
+
+.collapsible-header:hover {
+    background: var(--bg-color);
+}
+
+.collapsible-header h2 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.collapsible-header h2::before {
+    content: '';
+    width: 4px;
+    height: 1.2em;
+    background: var(--primary-color);
+    border-radius: 2px;
+}
+
+.collapsible-header .header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.collapsible-header .header-title .collapse-icon {
+    margin-left: 0.5rem;
+}
+
+.collapse-icon {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    transition: transform 0.3s ease;
+    margin-left: auto;
+}
+
+.collapsible-section.collapsed .collapse-icon {
+    transform: rotate(-90deg);
+}
+
+.collapsible-content {
+    max-height: 2000px;
+    overflow: hidden;
+    transition: max-height 0.4s ease, opacity 0.3s ease, padding 0.3s ease;
+    opacity: 1;
+    margin-top: 0.5rem;
+}
+
+.collapsible-section.collapsed .collapsible-content {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    border: none;
+}
+
+.collapsible-section.collapsed .collapsible-header {
+    margin-bottom: 0;
+    border-radius: 0.5rem;
+}
+
 /* Stats grid */
 .stats-grid {
     display: grid;
