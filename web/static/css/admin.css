@@ -24,22 +24,85 @@
 
 .admin-sidebar.collapsed {
     width: 70px;
+    overflow-x: hidden;
 }
 
-.admin-sidebar.collapsed .sidebar-logo,
+.admin-sidebar.collapsed .logo-text,
 .admin-sidebar.collapsed .nav-item span,
 .admin-sidebar.collapsed .nav-section-title {
     display: none;
 }
 
+.admin-sidebar.collapsed .sidebar-logo {
+    margin: 0;
+}
+
 .admin-sidebar.collapsed .nav-item {
     justify-content: center;
-    padding: 0.75rem;
+    padding: 0.75rem 0;
+    position: relative;
+    border-left: none;
+}
+
+.admin-sidebar.collapsed .nav-item.active {
+    background: rgba(59, 130, 246, 0.15);
+    border-left: none;
+}
+
+.admin-sidebar.collapsed .nav-icon {
+    margin: 0 auto;
 }
 
 .admin-sidebar.collapsed .sidebar-header {
+    flex-direction: column;
     justify-content: center;
-    padding: 1rem 0.5rem;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+}
+
+/* Footer quick links when collapsed */
+.admin-sidebar.collapsed .sidebar-footer {
+    padding: 0.75rem 0.5rem;
+    overflow: hidden;
+}
+
+.admin-sidebar.collapsed .quick-links {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.admin-sidebar.collapsed .quick-link {
+    width: 36px;
+    height: 36px;
+}
+
+/* Tooltip for collapsed nav items */
+
+.admin-sidebar.collapsed .nav-item::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.15s ease;
+    margin-left: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+}
+
+.admin-sidebar.collapsed .nav-item:hover::after {
+    opacity: 1;
+    visibility: visible;
 }
 
 /* Sidebar Header */
@@ -96,6 +159,7 @@
     flex: 1;
     padding: 1rem 0;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .nav-section {

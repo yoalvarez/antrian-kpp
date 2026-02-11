@@ -5,7 +5,22 @@
       "Bash(timeout:*)",
       "Bash(go mod tidy:*)",
       "Bash(curl:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(dir:*)",
+      "Bash(node -e:*)",
+      "Bash(rustc:*)",
+      "Bash(cargo --version:*)",
+      "Bash(npx tauri build:*)",
+      "Bash(export PATH=\"$USERPROFILE/.cargo/bin:$PATH\")",
+      "Bash(export PATH=\"/c/Users/817931566.INTRANET/.cargo/bin:$PATH\")",
+      "Bash(tasklist:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm install:*)",
+      "Bash(export PATH=\"$HOME/.cargo/bin:$PATH\")",
+      "WebSearch",
+      "WebFetch(domain:docs.rs)",
+      "WebFetch(domain:v2.tauri.app)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

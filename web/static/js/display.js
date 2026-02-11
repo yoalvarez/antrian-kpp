@@ -268,30 +268,22 @@ async function loadQueueTypes() {
     }
 }
 
-// Load queue counts by type
+// Load queue counts by type (uses backend API with today's date filter)
 async function loadQueueTypeCounts(types) {
     try {
         if (!types) types = queueTypesCache;
         if (!types || types.length === 0) return;
 
-        const response = await fetch("/api/queues?status=waiting&limit=1000");
-        const result = await response.json();
-        const queues = result.queues || [];
+        // Use /api/stats/by-type which already filters by today's date in backend
+        const response = await fetch("/api/stats/by-type");
+        const counts = await response.json();
 
-        const counts = {};
-        types.forEach(t => counts[t.code] = 0);
-
-        queues.forEach(q => {
-            const typeCode = q.queue_number.replace(/[0-9]/g, '');
-            if (counts[typeCode] !== undefined) {
-                counts[typeCode]++;
-            }
-        });
-
-        Object.keys(counts).forEach(code => {
-            const el = document.getElementById(`summary-${code}`);
+        // Update UI for each queue type
+        types.forEach(type => {
+            const el = document.getElementById(`summary-${type.code}`);
             if (el) {
-                el.textContent = `${counts[code]} menunggu`;
+                const count = counts[type.code] || 0;
+                el.textContent = `${count} menunggu`;
             }
         });
     } catch (error) {
@@ -1013,17 +1005,26 @@ function formatCounterNameForSpeech(counterName) {
     };
 
     // Replace standalone letters and numbers in counter name
-    // Match pattern like "Loket A 1" or "Counter B 2"
-    return counterName.replace(/([A-Za-z]+)\s+([A-Za-z])\s+(\d+)/gi, (match, prefix, letter, num) => {
+    // Supports: "Loket A 1", "Loket A1", "A 1", "A1"
+
+    // Pattern 1: "Loket A 1" or "Loket A1" (prefix + letter + optional space + number)
+    let result = counterName.replace(/([A-Za-z]+)\s+([A-Za-z])\s*(\d+)/gi, (match, prefix, letter, num) => {
         const spokenLetter = letterMap[letter.toUpperCase()] || letter;
         const spokenNumber = terbilang(parseInt(num));
         return `${prefix} ${spokenLetter} ${spokenNumber}`;
-    }).replace(/([A-Za-z])\s+(\d+)/gi, (match, letter, num) => {
-        // Handle pattern like "A 1" without prefix
-        const spokenLetter = letterMap[letter.toUpperCase()] || letter;
-        const spokenNumber = terbilang(parseInt(num));
-        return `${spokenLetter} ${spokenNumber}`;
     });
+
+    // Pattern 2: "A1" or "A 1" at the start (letter + optional space + number, no prefix)
+    // Only apply if the previous pattern didn't match
+    if (result === counterName) {
+        result = counterName.replace(/^([A-Za-z])\s*(\d+)$/gi, (match, letter, num) => {
+            const spokenLetter = letterMap[letter.toUpperCase()] || letter;
+            const spokenNumber = terbilang(parseInt(num));
+            return `${spokenLetter} ${spokenNumber}`;
+        });
+    }
+
+    return result;
 }
 
 // Convert number to Indonesian words

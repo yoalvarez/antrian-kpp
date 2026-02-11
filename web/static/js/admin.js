@@ -539,9 +539,40 @@ async function deleteQueueType() {
     }
 }
 
-// Show add counter modal
-function showAddCounterModal() {
+// Show add counter modal with auto-suggested counter number
+async function showAddCounterModal() {
     document.getElementById('add-counter-modal').classList.add('show');
+
+    // Auto-suggest next available counter number
+    try {
+        const response = await fetch('/api/counters');
+        const counters = await response.json();
+
+        // Get all existing counter numbers as integers
+        const existingNumbers = counters
+            .map(c => parseInt(c.counter_number, 10))
+            .filter(n => !isNaN(n))
+            .sort((a, b) => a - b);
+
+        // Find the next available number (fill gaps first, otherwise max+1)
+        let nextNumber = 1;
+        if (existingNumbers.length > 0) {
+            // Check for gaps in sequence
+            for (let i = 1; i <= existingNumbers[existingNumbers.length - 1] + 1; i++) {
+                if (!existingNumbers.includes(i)) {
+                    nextNumber = i;
+                    break;
+                }
+            }
+        }
+
+        document.getElementById('counter-number').value = nextNumber;
+        // Trigger auto-generate counter name
+        autoGenerateCounterName();
+    } catch (error) {
+        console.error('Failed to get counters for suggestion:', error);
+    }
+
     document.getElementById('counter-number').focus();
 }
 

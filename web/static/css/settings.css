@@ -1,0 +1,169 @@
+/* Settings Button & Modal - Shared Component */
+
+.settings-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--border, #e4e4e7);
+    border-radius: 8px;
+    color: var(--text-muted, #a1a1aa);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+/* When inside a header with position:relative, use absolute positioning */
+.counters-header .settings-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.settings-btn:hover {
+    background: var(--bg-accent, #f5f5f5);
+    color: var(--text-primary, #18181b);
+    border-color: var(--text-muted, #a1a1aa);
+}
+
+/* Settings Modal Overlay */
+.settings-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.settings-overlay.active {
+    display: flex;
+}
+
+/* Settings Modal */
+.settings-modal {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    animation: modalIn 0.2s ease;
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.settings-modal h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #18181b;
+    margin-bottom: 0.5rem;
+}
+
+.settings-modal > p {
+    font-size: 0.875rem;
+    color: #71717a;
+    margin-bottom: 1rem;
+}
+
+/* Input Group */
+.settings-input-group {
+    display: flex;
+    align-items: center;
+    border: 2px solid #e4e4e7;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+}
+
+.settings-input-group:focus-within {
+    border-color: #0ea5e9;
+}
+
+.settings-prefix {
+    padding: 0.75rem 0.75rem;
+    background: #f5f5f5;
+    color: #71717a;
+    font-size: 0.875rem;
+    font-family: 'Consolas', 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    border-right: 1px solid #e4e4e7;
+}
+
+.settings-input-group input {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    outline: none;
+    font-size: 0.9375rem;
+    font-family: 'Consolas', 'JetBrains Mono', monospace;
+    color: #18181b;
+    background: transparent;
+}
+
+.settings-input-group input::placeholder {
+    color: #a1a1aa;
+}
+
+/* Hint text */
+.settings-hint {
+    font-size: 0.75rem !important;
+    color: #a1a1aa !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 1.5rem !important;
+}
+
+/* Action buttons */
+.settings-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
+
+.settings-actions button {
+    padding: 0.625rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.settings-cancel {
+    background: transparent;
+    border: 1px solid #e4e4e7;
+    color: #71717a;
+}
+
+.settings-cancel:hover {
+    background: #f5f5f5;
+    color: #18181b;
+}
+
+.settings-save {
+    background: #0ea5e9;
+    border: none;
+    color: white;
+}
+
+.settings-save:hover {
+    background: #0284c7;
+}

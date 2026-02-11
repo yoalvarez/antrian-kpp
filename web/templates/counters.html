@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pilih Loket - Sistem Antrian</title>
     <link rel="stylesheet" href="/static/css/counters.css">
+    <link rel="stylesheet" href="/static/css/settings.css">
 </head>
 <body class="counters-body">
     <div class="counters-container">
@@ -12,7 +13,30 @@
             <h1>Pilih Loket</h1>
             <p class="subtitle">Silakan pilih loket untuk mulai melayani antrian</p>
             <div class="datetime" id="datetime"></div>
+            <button class="settings-btn" id="settings-btn" title="Pengaturan Server">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
         </header>
+
+        <!-- Settings Modal -->
+        <div class="settings-overlay" id="settings-overlay">
+            <div class="settings-modal">
+                <h3>Pengaturan Server</h3>
+                <p>Masukkan alamat IP server antrian:</p>
+                <div class="settings-input-group">
+                    <span class="settings-prefix">http://</span>
+                    <input type="text" id="server-ip" placeholder="PC-SERVER:8080" autocomplete="off">
+                </div>
+                <p class="settings-hint">Contoh: PC-SERVER:8080, 192.168.1.100:8080, atau localhost:8080</p>
+                <div class="settings-actions">
+                    <button class="settings-cancel" id="settings-cancel">Batal</button>
+                    <button class="settings-save" id="settings-save">Simpan & Muat Ulang</button>
+                </div>
+            </div>
+        </div>
 
         <main class="counters-main">
             <div class="counters-grid" id="counters-grid">
@@ -106,6 +130,40 @@
 
         // Auto refresh every 5 seconds
         setInterval(loadCounters, 5000);
+
+        // Settings modal
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsOverlay = document.getElementById('settings-overlay');
+        const settingsCancel = document.getElementById('settings-cancel');
+        const settingsSave = document.getElementById('settings-save');
+        const serverIpInput = document.getElementById('server-ip');
+
+        settingsBtn.addEventListener('click', () => {
+            serverIpInput.value = window.location.host;
+            settingsOverlay.classList.add('active');
+            serverIpInput.focus();
+            serverIpInput.select();
+        });
+
+        settingsCancel.addEventListener('click', () => {
+            settingsOverlay.classList.remove('active');
+        });
+
+        settingsOverlay.addEventListener('click', (e) => {
+            if (e.target === settingsOverlay) settingsOverlay.classList.remove('active');
+        });
+
+        serverIpInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') settingsSave.click();
+            if (e.key === 'Escape') settingsOverlay.classList.remove('active');
+        });
+
+        settingsSave.addEventListener('click', () => {
+            const ip = serverIpInput.value.trim();
+            if (!ip) return;
+            const newUrl = 'http://' + ip + window.location.pathname;
+            window.location.href = newUrl;
+        });
     </script>
 </body>
 </html>
