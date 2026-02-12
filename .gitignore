@@ -29,6 +29,7 @@ electron-display/
 electron-counter/
 tauri-display/
 tauri-counter/
+tauri-ticket/
 
 # ==========================================
 # Release / build output
@@ -75,9 +76,3 @@ data/
 Thumbs.db
 desktop.ini
 
-# ==========================================
-# Old markers
-# ==========================================
-.tauri-counter
-.tauri-display
-.electron-counter
