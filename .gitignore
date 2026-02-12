@@ -23,17 +23,12 @@ go.work
 go.work.sum
 
 # ==========================================
-# Node.js / Electron / Tauri frontend
+# Electron & Tauri apps (seluruh folder)
 # ==========================================
-node_modules/
-dist/
-.turbo/
-*.tsbuildinfo
-
-# ==========================================
-# Rust / Tauri build artifacts
-# ==========================================
-**/target/
+electron-display/
+electron-counter/
+tauri-display/
+tauri-counter/
 
 # ==========================================
 # Release / build output
