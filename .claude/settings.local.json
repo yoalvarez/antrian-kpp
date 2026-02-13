@@ -23,7 +23,9 @@
       "WebFetch(domain:github.com)",
       "Bash(git rm:*)",
       "Bash(xargs:*)",
-      "Bash(git remote add:*)"
+      "Bash(git remote add:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo clean:*)"
     ]
   }
 }

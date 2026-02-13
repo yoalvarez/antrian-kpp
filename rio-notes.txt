@@ -1,0 +1,6 @@
+installer pakai:
+Display: A:\proyek_magang\antrian-kpp\tauri-display\src-tauri\target\release\bundle\nsis
+Counter: A:\proyek_magang\antrian-kpp\tauri-counter\src-tauri\target\release\bundle\nsis
+Ticket: A:\proyek_magang\antrian-kpp\tauri-ticket\src-tauri\target\release\bundle\nsis
+
+Server: A:\proyek_magang\antrian-kpp\release\server

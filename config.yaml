@@ -22,3 +22,7 @@ audio:
 security:
     admin_password: admin123
     session_timeout: 3600
+printer:
+    enabled: false
+    printer_name: ECO80
+    remote_enabled: true
